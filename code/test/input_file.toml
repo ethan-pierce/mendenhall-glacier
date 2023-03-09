@@ -91,4 +91,5 @@ initial = 100e3
 [input_fields]
 # [input_fields.example]
 # units = 'm / a'
+# varname = 'example'
 # file = 'path/to/file'

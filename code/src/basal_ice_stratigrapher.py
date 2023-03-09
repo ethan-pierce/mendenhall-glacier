@@ -8,7 +8,7 @@ ice-till interface, and is then transported within the ice column by vertical re
 sit below the frozen fringe layer.
 
 Required input fields:
-    glacier__thickness: defined at nodes, the thickness of ice
+    ice_thickness: defined at nodes, the thickness of ice
     glacier__sliding_velocity: defined at links, the velocity of ice at the slip interface
     glacier__effective_pressure: defined at nodes, the difference between overburden and water pressure
     bedrock__geothermal_heat_flux: defined at nodes, the heat flux at the ice-bed interface
@@ -26,6 +26,7 @@ import numpy as np
 import toml
 from landlab import RasterModelGrid, NodeStatus
 import rasterio as rio
+from netCDF4 import Dataset
 
 class BasalIceStratigrapher:
     """Tracks the evolution of basal sediment entrainment beneath a glacier."""
@@ -43,23 +44,31 @@ class BasalIceStratigrapher:
                 self.grid.add_zeros(key, at = 'node', units = inputs['solution_fields'][key]['units'])
                 self.grid.at_node[key][:] = inputs['solution_fields'][key]['initial']
 
-        for key in inputs['static_inputs'].keys():
-            if key not in self.grid.at_node.keys():
-                self.grid.add_zeros(key, at = 'node', units = inputs['static_inputs'][key]['units'])
-                self.grid.at_node[key][:] = inputs['static_inputs'][key]['value']
-
         for key in inputs['input_fields'].keys():
             if key not in self.grid.at_node.keys():
-                with rio.open(inputs['input_fields'][key][file], 'r') as f:
-                    data = f.read(1)
+                if inputs['input_fields'][key][file].split('.')[-1] == 'tif':
+                    with rio.open(inputs['input_fields'][key]['file'], 'r') as f:
+                        data = f.read(1)
+
+                        if data.shape == self.grid.shape:
+                            self.grid.add_field(key, data, at = 'node', units = inputs['input_fields'][key]['units'])
+
+                        else:
+                            raise ValueError("Shape of " + str(key) + " data does not match grid shape.")
+
+                elif inputs['input_fields'][key][file].split('.')[-1] == 'nc':
+                    data = Dataset(inputs['input_fields'][key]['file'])
+                    field = data[inputs['input_fields'][key]['varname']]
+
+                    if len(field.shape) == 3:
+                        field = field[0] 
 
                     if data.shape == self.grid.shape:
-                        self.grid.add_field(key, data, at = 'node', units = inputs['input_fields'][key]['units'])
-
+                        self.grid.add_field(key, field, at = 'node', units = inputs['input_fields'][key]['units'])
                     else:
                         raise ValueError("Shape of " + str(key) + " data does not match grid shape.")
 
-        self.grid.status_at_node[self.grid.at_node['glacier__thickness'][:] <= 0] = NodeStatus.CLOSED
+        self.grid.status_at_node[self.grid.at_node['ice_thickness'][:] <= 0.5] = NodeStatus.CLOSED
 
     def initialize(self):
         """Perform initialization routines."""
@@ -71,7 +80,7 @@ class BasalIceStratigrapher:
 
     def calc_sliding_velocity(self):
         """Calculates the magnitude of sliding velocity using an attractor formulation (Kessler and Anderson 2006)."""
-        required = ['glacier__thickness', 'glacier__surface_elevation']
+        required = ['ice_thickness', 'glacier__surface_elevation']
 
         for field in required:
             if field not in self.grid.at_node.keys():
@@ -85,7 +94,7 @@ class BasalIceStratigrapher:
 
         rho = self.parameters['ice_density']
         g = self.parameters['gravity']
-        H = self.grid.at_node['glacier__thickness'][:]
+        H = self.grid.at_node['ice_thickness'][:]
         S = self.grid.at_node['glacier__surface_elevation'][:]
         dS = self.grid.calc_slope_at_node(S)
 
@@ -405,8 +414,8 @@ class BasalIceStratigrapher:
         if dynamic_thinning == True:
             self.calc_dynamic_thinning()
 
-        self.grid.at_node['dispersed_layer__growth_rate'][self.grid.at_node['glacier__thickness'] <= 0] = 0.0
-        self.grid.at_node['fringe__growth_rate'][self.grid.at_node['glacier__thickness'] <= 0] = 0.0
+        self.grid.at_node['dispersed_layer__growth_rate'][self.grid.at_node['ice_thickness'] <= 0] = 0.0
+        self.grid.at_node['fringe__growth_rate'][self.grid.at_node['ice_thickness'] <= 0] = 0.0
 
         self.grid.at_node['frozen_fringe__thickness'][:] += (
             self.grid.at_node['fringe__growth_rate'][:] * dt
