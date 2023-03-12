@@ -59,18 +59,29 @@ class BasalIceStratigrapher:
                     field = field[0]
 
                 try:
-                    grid.add_field(variable, data, at = 'node')
+                    self.grid.add_field(variable, data, at = 'node')
                 except:
                     raise ValueError('Could not add ' + str(variable) + ' to grid. Check names, shapes, etc. and try again.')
             
             else:
-                try:
-                    value = np.full_like(self.grid.shape, info['value'])
-                    grid.add_field(variable, value, at = 'node')
-                except:
-                    raise ValueError('Missing input file or scalar value for ' + str(variable) + '.')
+                value = np.full(self.grid.shape, info['value'])
+                self.grid.add_field(variable, value, at = 'node')
+
+        for required in ['ice_thickness', 'sliding_velocity_x', 'sliding_velocity_y', 'basal_water_pressure']:
+            if required not in self.grid.at_node.keys():
+                raise AttributeError(required + ' missing at grid nodes.')
 
         self.grid.status_at_node[self.grid.at_node['ice_thickness'][:] <= 0.5] = NodeStatus.CLOSED
+
+        self.grid.add_zeros('sliding_velocity_magnitude', at = 'node')
+        self.grid.at_node['sliding_velocity_magnitude'][:] = np.abs(
+            np.sqrt(self.grid.at_node['sliding_velocity_x'][:]**2 + self.grid.at_node['sliding_velocity_y'][:]**2 )
+        )
+
+        self.grid.add_zeros('effective_pressure', at = 'node')
+        self.grid.add_zeros('basal_shear_stress', at = 'node')
+        self.grid.add_zeros('erosion_rate', at = 'node')
+        self.grid.add_zeros('basal_melt_rate', at = 'node')
 
     def set_value(self, var: str, value: np.ndarray):
         """Set the value of a variable on the model grid."""
@@ -80,21 +91,55 @@ class BasalIceStratigrapher:
 # Model processes #
 ###################
 
+    def calc_effective_pressure(self):
+        """Calculate the effective pressure at the ice-bed interface."""
+        rho = self.params['ice_density']
+        g = self.params['gravity']
+        H = self.grid.at_node['ice_thickness'][:]
+        Pw = self.grid.at_node['basal_water_pressure'][:]
+
+        Pi = rho * g * H
+        self.grid.at_node['effective_pressure'][:] = Pi - Pw
+
     def calc_shear_stress(self):
-        """Calculate the basal shear stress beneath the glacier."""
-        pass
+        """Calculate the basal shear stress beneath the glacier (Zoet and Iverson, 2021)."""
+        C = self.params['slip_law_coefficient']
+        p = self.params['shear_exponent']
+        theta = np.deg2rad(self.params['friction_angle'])
+        N = self.grid.at_node['effective_pressure'][:]
+        Us = self.grid.at_node['sliding_velocity_magnitude'][:]
+
+        N_reg = np.where(N != 0, N, np.nan)
+        Ut = C * N_reg
+        tau_b = N * np.tan(theta) * np.float_power(Us / (Us + Ut), (1 / p))
+        
+        self.grid.at_node['basal_shear_stress'][:] = tau_b[:]
 
     def calc_erosion_rate(self):
-        """Calculate the erosion rate beneath the glacier."""
-        pass
+        """Calculate the erosion rate beneath the glacier (Herman et al., 2021)."""
+        Ks = self.params['erosion_coefficient']
+        m = self.params['erosion_exponent']
+        Us = self.grid.at_node['sliding_velocity_magnitude'][:]
+
+        self.grid.at_node['erosion_rate'][:] = Ks * Us**m
 
     def calc_melt_rate(self):
         """Calculate the melt rate beneath the glacier."""
-        pass
+        rho = self.params['ice_density']
+        L = self.params['ice_latent_heat']
+        Us = self.grid.at_node['sliding_velocity_magnitude'][:]
+        tau_b = self.grid.at_node['basal_shear_stress'][:]
+
+        frictional_heat_flux = Us * tau_b
+        geothermal_heat_flux = self.params['geothermal_heat_flux']
+
+        self.grid.at_node['basal_melt_rate'][:] = (
+            (frictional_heat_flux + geothermal_heat_flux) / (rho * L)
+        )
 
     def calc_thermal_gradients(self):
         """Calculate the thermal gradient through the frozen fringe layer."""
-        pass 
+        pass
 
     def calc_fringe_growth_rate(self):
         """Calculate the growth rate of the frozen fringe."""

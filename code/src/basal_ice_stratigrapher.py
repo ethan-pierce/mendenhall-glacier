@@ -107,7 +107,7 @@ class BasalIceStratigrapher:
 
         Us = Uc * np.exp(1 - (tau_c / tau_reg))
         self.grid.at_node['glacier__sliding_velocity'][:] = Us[:]
-
+        
     def calc_shear_stress(self):
         """Calculates shear stress using a soft-bed slip law (Zoet and Iverson 2021)."""
         self.calc_sliding_velocity()
