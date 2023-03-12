@@ -39,6 +39,7 @@ class BasalIceStratigrapher:
         self.grid = None
         self.params = {}
         self.time_elapsed = 0.0
+        self.sec_per_a = 31556926
 
     def initialize(self, config: str):
         """Using a configuration file, construct a grid and populate input fields."""
@@ -79,9 +80,31 @@ class BasalIceStratigrapher:
         )
 
         self.grid.add_zeros('effective_pressure', at = 'node')
+
         self.grid.add_zeros('basal_shear_stress', at = 'node')
+
         self.grid.add_zeros('erosion_rate', at = 'node')
+
         self.grid.add_zeros('basal_melt_rate', at = 'node')
+
+        self.grid.add_zeros('frictional_heat_flux', at = 'node')
+        self.grid.add_zeros('fringe_thermal_gradient', at = 'node')
+        self.grid.add_zeros('transition_temperature', at = 'node')
+
+        self.grid.add_zeros('fringe_undercooling', at = 'node')
+        self.grid.add_zeros('fringe_saturation', at = 'node')
+        self.grid.add_zeros('nominal_heave_rate', at = 'node')
+        self.grid.add_zeros('flow_resistance', at = 'node')
+        self.grid.add_zeros('fringe_heave_rate', at = 'node')
+        self.grid.add_zeros('fringe_growth_rate', at = 'node')
+
+        self.grid.add_zeros('dispersed_layer_gradient', at = 'node')
+        self.grid.add_zeros('dispersed_layer_growth_rate', at = 'node')
+
+        self.grid.add_zeros('till_thickness', at = 'node')
+        self.grid.add_zeros('fringe_thickness', at = 'node')
+        self.grid.add_zeros('dispersed_layer_thickness', at = 'node')
+        self.grid.add_full('dispersed_concentration', self.params['initial_dispersed_concentration'], at = 'node')
 
     def set_value(self, var: str, value: np.ndarray):
         """Set the value of a variable on the model grid."""
@@ -121,7 +144,7 @@ class BasalIceStratigrapher:
         m = self.params['erosion_exponent']
         Us = self.grid.at_node['sliding_velocity_magnitude'][:]
 
-        self.grid.at_node['erosion_rate'][:] = Ks * Us**m
+        self.grid.at_node['erosion_rate'][:] = (Ks * Us**m) / self.sec_per_a 
 
     def calc_melt_rate(self):
         """Calculate the melt rate beneath the glacier."""
@@ -131,6 +154,8 @@ class BasalIceStratigrapher:
         tau_b = self.grid.at_node['basal_shear_stress'][:]
 
         frictional_heat_flux = Us * tau_b
+        self.grid.at_node['frictional_heat_flux'][:] = frictional_heat_flux
+
         geothermal_heat_flux = self.params['geothermal_heat_flux']
 
         self.grid.at_node['basal_melt_rate'][:] = (
@@ -139,35 +164,190 @@ class BasalIceStratigrapher:
 
     def calc_thermal_gradients(self):
         """Calculate the thermal gradient through the frozen fringe layer."""
-        pass
+        gamma = self.params['surface_energy']
+        rp = self.params['pore_throat_radius']
+        self.params['entry_pressure'] = (2 * gamma) / rp
+
+        pf = self.params['entry_pressure']
+        Tm = self.params['melt_temperature']
+        rho = self.params['ice_density']
+        L = self.params['ice_latent_heat']
+        self.params['fringe_base_temperature'] = Tm - ((pf * Tm) / (rho * L))
+
+        ki = self.params['ice_thermal_conductivity']
+        ks = self.params['sediment_thermal_conductivity']
+        phi = self.params['frozen_fringe_porosity']
+        self.params['fringe_conductivity'] = (1 - phi) * ks + phi * ki
+
+        K = self.params['fringe_conductivity']
+        Qg = self.params['geothermal_heat_flux']
+        Qf = self.grid.at_node['frictional_heat_flux'][:]
+        self.grid.at_node['fringe_thermal_gradient'][:] = -(Qg + Qf) / K
+
+        G = self.grid.at_node['fringe_thermal_gradient'][:]
+        hf = self.grid.at_node['fringe_thickness'][:]
+        Tf = self.params['fringe_base_temperature']
+
+        self.grid.at_node['transition_temperature'][:] = G * hf + Tf
 
     def calc_fringe_growth_rate(self):
         """Calculate the growth rate of the frozen fringe."""
-        pass
+        G = self.grid.at_node['fringe_thermal_gradient'][:]
+        h = self.grid.at_node['fringe_thickness'][:]
+        Tm = self.params['melt_temperature']
+        Tf = self.params['fringe_base_temperature']
+        self.grid.at_node['fringe_undercooling'][:] = 1 - ((G * h) / (Tm - Tf))
+
+        alpha = self.params['fringe_alpha']
+        beta = self.params['fringe_beta']
+        theta = self.grid.at_node['fringe_undercooling'][:]
+        self.grid.at_node['fringe_saturation'][:] = 1 - theta**(-beta)
+
+        rho_w = self.params['water_density']
+        rho_i = self.params['ice_density']
+        L = self.params['ice_latent_heat']
+        k0 = self.params['permeability']
+        eta = self.params['water_viscosity']
+        self.grid.at_node['nominal_heave_rate'][:] = -(rho_w**2 * L * G * k0) / (rho_i * Tm * eta)
+
+        d = self.params['film_thickness']
+        R = self.params['till_grain_radius']
+        self.grid.at_node['flow_resistance'][:] = -(rho_w**2 * k0 * G * R**2) / (rho_i**2 * (Tm - Tf) * d**3)
+
+        phi = self.params['frozen_fringe_porosity']
+        Vs = self.grid.at_node['nominal_heave_rate'][:]
+        Pi = self.grid.at_node['flow_resistance'][:]
+        N = self.grid.at_node['effective_pressure'][:]
+        pf = self.params['entry_pressure']
+
+        # Throwaway variables for long coefficients
+        A = theta + phi * (1 - theta + (1 / (1 - beta)) * (theta**(1 - beta) - 1))
+        B = ((1 - phi)**2 / (alpha + 1)) * (theta**(alpha + 1) - 1)
+        C = ((2 * (1 - phi) * phi) / (alpha - beta + 1)) * (theta**(alpha - beta + 1) - 1)
+        D = (phi**2 / (alpha - 2 * beta + 1)) * (theta**(alpha - 2 * beta + 1) - 1)
+
+        self.grid.at_node['fringe_heave_rate'][:] = Vs * (A - (N / pf)) / (B + C + D + Pi)
+        V = self.grid.at_node['fringe_heave_rate'][:]
+        m = self.grid.at_node['basal_melt_rate'][:]
+        S = self.grid.at_node['fringe_saturation'][:]
+
+        self.grid.at_node['fringe_growth_rate'] = np.where(
+            S > 0,
+            -(m + V) / (phi * S),
+            0.0
+        )
 
     def calc_regelation_rate(self):
         """Calculate the vertical velocity of sediment particles above the fringe."""
-        pass
+        Tm = self.params['melt_temperature']
+        Tf = self.params['fringe_base_temperature']
+        rho = self.params['ice_density']
+        g = self.params['gravity']
+        L = self.params['ice_latent_heat']
+        r = self.params['till_grain_radius']
+        z0 = self.params['critical_depth']
+        gamma = self.params['ice_clapeyron_slope']
+        theta = self.grid.at_node['fringe_undercooling'][:]
+
+        # Meyer et al. 2018, eq (12)
+        temp_at_top_of_fringe = Tm - (Tm - Tf) * theta
+
+        # The temperature gradient depends on the supercooling at the top of the fringe and the pressure-melting-point
+        G_premelting = (Tm - temp_at_top_of_fringe) / z0
+        G_pressure_melting = gamma * rho * g
+        G = np.maximum(G_premelting, G_pressure_melting)
+        self.grid.at_node['dispersed_layer_gradient'][:] = G
+
+        # Kozeny-Carmen equation for permeability
+        phi = self.params['cluster_volume_fraction']
+        K = (r**2 * (1 - phi)**3) / (45 * phi**2)
+
+        mu = self.params['water_viscosity']
+        ki = self.params['ice_thermal_conductivity']
+        kp = self.params['sediment_thermal_conductivity']
+        coeff = (K * rho * L) / (mu * Tm * (2 * ki + kp))
+
+        # The dispersed layer thickness grows with the velocity of the fastest particles
+        self.grid.at_node['dispersed_layer_growth_rate'][:] = (coeff * 3 * ki) / (1 + coeff * rho * L) * G
 
 ##########
 # Update #
 ##########
 
-    def erode_bedrock(self, t: float):
+    def erode_bedrock(self, dt: float):
         """Run one step, only eroding bedrock beneath the glacier."""
-        pass
+        self.calc_effective_pressure()
+        self.calc_shear_stress()
+        self.calc_erosion_rate()
 
-    def entrain_sediment(self, t: float):
+        self.grid.at_node['till_thickness'][:] += self.grid.at_node['erosion_rate'][:] * dt
+
+    def entrain_sediment(self, dt: float, already_eroded = False):
         """Run one step, only entraining sediment (if available) in basal ice layers."""
-        pass
+        if not already_eroded:
+            self.calc_effective_pressure()
+            self.calc_shear_stress()
 
-    def advect_sediment(self, t: float):
+        self.calc_melt_rate()
+        self.calc_thermal_gradients()
+        self.calc_fringe_growth_rate()
+        self.calc_regelation_rate()
+
+        Ht = self.grid.at_node['till_thickness'][:]
+        Hf = self.grid.at_node['fringe_thickness'][:]
+        Cf = self.params['frozen_fringe_porosity']
+        Hd = self.grid.at_node['dispersed_layer_thickness'][:]
+        Cd = self.grid.at_node['dispersed_concentration'][:]
+
+        fringe_max_dh = self.grid.at_node['fringe_growth_rate'] * dt
+        dispersed_max_dh = self.grid.at_node['dispersed_layer_growth_rate'] * dt
+
+        fringe_dh = np.where(fringe_max_dh * Cf <= Ht, fringe_max_dh, Ht)
+        dispersed_dh = np.where(dispersed_max_dh * Cd <= Hf, dispersed_max_dh, Hf)
+
+        Ht[:] -= Cf * fringe_dh[:]
+        Hf[:] += fringe_dh[:]
+
+        Hf[:] -= Cd[:] * dispersed_dh[:]
+        Hd[:] += dispersed_dh[:]
+
+        Hf[:] = np.where(Hf <= 1e-6, 1e-6, Hf)
+
+    def advect_sediment(self, dt: float):
         """Run one step, only advecting sediment packages via basal sliding."""
-        pass
+        ux = self.grid.at_node['sliding_velocity_x'][:]
+        uy = self.grid.at_node['sliding_velocity_y'][:]
+        Hf = self.grid.at_node['fringe_thickness'][:]
+        Hd = self.grid.at_node['dispersed_layer_thickness'][:]
+        Cd = self.grid.at_node['dispersed_concentration'][:]
+        
+        grad_ux = self.grid.map_mean_of_links_to_node(self.grid.calc_grad_at_link(ux))
+        grad_uy = self.grid.map_mean_of_links_to_node(self.grid.calc_grad_at_link(uy))
+        grad_Hf = self.grid.map_mean_of_links_to_node(self.grid.calc_grad_at_link(Hf))
+        grad_Hd = self.grid.map_mean_of_links_to_node(self.grid.calc_grad_at_link(Hd))
+        grad_Cd = self.grid.map_mean_of_links_to_node(self.grid.calc_grad_at_link(Cd))
 
-    def run_one_step(self, t: float):
+        advect_Hf = (ux * grad_Hf + Hf * grad_ux + uy * grad_Hf + Hf * grad_uy) * dt
+        advect_Hd = (ux * grad_Hd + Hd * grad_ux + uy * grad_Hd + Hd * grad_uy) * dt
+        advect_Cd = (ux * grad_Cd + Cd * grad_ux + uy * grad_Cd + Cd * grad_uy) * dt
+
+        Hf[:] -= advect_Hf[:]
+        Hd[:] -= advect_Hd[:]
+        Cd[:] -= advect_Cd[:]
+        
+        Hf[:] = np.where(Hf <= 0, 1e-6, Hf[:])
+        Hd[:] = np.where(Hd <= 0, 0.0, Hd[:])
+        Cd[:] = np.where(Cd <= 0, 1e-3, Cd[:])
+
+    def run_one_step(self, dt: float, advect = True):
         """Run one step with all process models."""
-        pass
+        self.erode_bedrock(dt)
+        self.entrain_sediment(dt)
+
+        if advect:
+            self.advect_sediment(dt)
+
+        self.time_elapsed += dt
 
 ############
 # Finalize #

@@ -30,6 +30,7 @@ film_thickness = 1e-8
 till_grain_radius = 4e-5
 critical_depth = 10
 cluster_volume_fraction = 0.64
+initial_dispersed_concentration = 0.05
 
 [inputs]
 [inputs.ice_thickness]
