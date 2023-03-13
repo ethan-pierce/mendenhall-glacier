@@ -25,6 +25,7 @@ import numpy as np
 import tomli
 from netCDF4 import Dataset
 from landlab import RasterModelGrid, NodeStatus
+import matplotlib.pyplot as plt
 
 class BasalIceStratigrapher:
     """Model subglacial sediment entrainment processes."""
@@ -55,11 +56,11 @@ class BasalIceStratigrapher:
             if len(info['file']) > 0:
                 data = Dataset(info['file'])
                 field = data[info['varname']]
-                
+
                 if len(field.shape) == 3:
                     field = field[0]
 
-                self.grid.add_field(variable, data, at = 'node')
+                self.grid.add_field(variable, field, at = 'node')
             
             else:
                 value = np.full(self.grid.shape, info['value'])
@@ -70,6 +71,8 @@ class BasalIceStratigrapher:
                 raise AttributeError(required + ' missing at grid nodes.')
 
         self.grid.status_at_node[self.grid.at_node['ice_thickness'][:] <= 0.5] = NodeStatus.CLOSED
+        self.grid.at_node['sliding_velocity_x'][:] *= 1 / self.sec_per_a
+        self.grid.at_node['sliding_velocity_y'][:] *= 1 / self.sec_per_a
 
         self.grid.add_zeros('sliding_velocity_magnitude', at = 'node')
         self.grid.at_node['sliding_velocity_magnitude'][:] = np.abs(
@@ -230,7 +233,7 @@ class BasalIceStratigrapher:
 
         self.grid.at_node['fringe_growth_rate'] = np.where(
             S > 0,
-            -(m + V) / (phi * S),
+            (-m - V) / (phi * S),
             0.0
         )
 
@@ -279,7 +282,7 @@ class BasalIceStratigrapher:
 
         self.grid.at_node['till_thickness'][:] += self.grid.at_node['erosion_rate'][:] * dt
 
-    def entrain_sediment(self, dt: float, already_eroded = False):
+    def entrain_sediment(self, dt: float, already_eroded = False, clamp = True):
         """Run one step, only entraining sediment (if available) in basal ice layers."""
         if not already_eroded:
             self.calc_effective_pressure()
@@ -294,21 +297,21 @@ class BasalIceStratigrapher:
         Hf = self.grid.at_node['fringe_thickness'][:]
         Cf = self.params['frozen_fringe_porosity']
         Hd = self.grid.at_node['dispersed_layer_thickness'][:]
-        Cd = self.grid.at_node['dispersed_concentration'][:]
 
         fringe_max_dh = self.grid.at_node['fringe_growth_rate'] * dt
-        dispersed_max_dh = self.grid.at_node['dispersed_layer_growth_rate'] * dt
 
-        fringe_dh = np.where(fringe_max_dh * Cf <= Ht, fringe_max_dh, Ht)
-        dispersed_dh = np.where(dispersed_max_dh * Cd <= Hf, dispersed_max_dh, Hf)
+        fringe_dh = np.minimum(fringe_max_dh, Ht / Cf)
+        dispersed_dh = self.grid.at_node['dispersed_layer_growth_rate'] * dt
 
-        Ht[:] -= Cf * fringe_dh[:]
+        Ht[:] -= np.where(fringe_dh > 0, Cf * fringe_dh, 0)
         Hf[:] += fringe_dh[:]
-
-        Hf[:] -= Cd[:] * dispersed_dh[:]
         Hd[:] += dispersed_dh[:]
 
+        Ht[:] = np.where(Ht < 0, 0, Ht)
         Hf[:] = np.where(Hf <= 1e-6, 1e-6, Hf)
+
+        if clamp:
+            Hf[:] = np.where(Hf > np.percentile(Hf, 99), np.percentile(Hf, 99), Hf)
 
     def advect_sediment(self, dt: float):
         """Run one step, only advecting sediment packages via basal sliding."""
@@ -353,3 +356,28 @@ class BasalIceStratigrapher:
     def write_output(self, path_to_file: str):
         """Write output to a netcdf file."""
         pass
+
+    def plot_var(self, 
+                 var: str, 
+                 path_to_file: str = False,
+                 scalar: float = 1.0,
+                 units_label: str = 'None', 
+                 imshow_args: dict = {}, 
+                 cbar_args: dict = {}, 
+                 savefig_args: dict = {}):
+        """Plot a raster field and optionally save to a file."""
+        field = np.where(
+            self.grid.at_node['ice_thickness'][:] > 0.5,
+            self.grid.at_node[var][:] * scalar,
+            np.nan
+        )
+        field = np.reshape(field, [self.grid.shape[1], self.grid.shape[0]])
+
+        im = plt.imshow(field, **imshow_args)
+        plt.colorbar(im, **cbar_args)
+        plt.title(var.replace('_', ' ') + '(' + units_label + ')')
+
+        if path_to_file:
+            plt.savefig(path_to_file, **savefig_args)
+
+        plt.close('all')
