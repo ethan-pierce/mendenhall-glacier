@@ -57,8 +57,8 @@ BIS.plot_var(
     units_label='m'
 )
 
-for t in range(500):
-    dt = 0.01 * BIS.sec_per_a
+for t in range(20000):
+    dt = 0.0001 * BIS.sec_per_a
     BIS.run_one_step(dt, advect=True)
 
     if t % 1000 == 0:
@@ -98,7 +98,7 @@ BIS.plot_var(
     'fringe_growth_rate', working_dir + '/outputs/dHf_dt.png', 
     units_label='m/a',
     scalar=BIS.sec_per_a,
-    imshow_args={'vmin': 0, 'vmax': np.percentile(BIS.grid.at_node['fringe_growth_rate'][:], 99)}
+    imshow_args={'vmin': 0}
 )
 
 var = BIS.grid.map_mean_of_links_to_node(BIS.grid.calc_grad_at_link('dispersed_layer_thickness'))

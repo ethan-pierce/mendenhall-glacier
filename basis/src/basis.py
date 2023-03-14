@@ -20,6 +20,9 @@ Example usage:
     basis.write_output('my_output_file.nc')
 
 """
+# TODO plot dt at a single point
+# TODO check fringe under icefalls
+
 
 import numpy as np
 import tomli
@@ -66,7 +69,7 @@ class BasalIceStratigrapher:
                 value = np.full(self.grid.shape, info['value'])
                 self.grid.add_field(variable, value, at = 'node')
 
-        for required in ['ice_thickness', 'sliding_velocity_x', 'sliding_velocity_y', 'basal_water_pressure']:
+        for required in ['ice_thickness', 'surface_elevation', 'sliding_velocity_x', 'sliding_velocity_y', 'basal_water_pressure']:
             if required not in self.grid.at_node.keys():
                 raise AttributeError(required + ' missing at grid nodes.')
 
@@ -133,13 +136,13 @@ class BasalIceStratigrapher:
         Us = self.grid.at_node['sliding_velocity_magnitude'][:]
 
         N_reg = np.where(
-            self.grid.at_node['ice_thickness'] > 0.5, N, np.nan
+            self.grid.at_node['ice_thickness'] > 0.5, N, 1e-9
         )
         Ut = C * N_reg
-        tau_b = N_reg * np.tan(theta) * np.float_power(Us / (Us + Ut), (1 / p))
+        tau_b = N * np.tan(theta) * np.float_power(Us / (Us + Ut), (1 / p))
         
         self.grid.at_node['basal_shear_stress'][:] = tau_b[:]
-
+        
     def calc_erosion_rate(self):
         """Calculate the erosion rate beneath the glacier (Herman et al., 2021)."""
         Ks = self.params['erosion_coefficient']
@@ -322,31 +325,34 @@ class BasalIceStratigrapher:
         Hd = self.grid.at_node['dispersed_layer_thickness'][:]
         Cd = self.grid.at_node['dispersed_concentration'][:]
         
-        # TODO upwind with surface elevation
-        # TODO plot dt at a single point
-        # TODO check fringe under icefalls
-        ux_links = self.grid.map_mean_of_link_nodes_to_link(ux)
-        uy_links = self.grid.map_mean_of_link_nodes_to_link(uy)
-        Hf_links = self.grid.map_value_at_max_node_to_link('fringe_thickness', 'fringe_thickness'),
-        Hd_links = self.grid.map_value_at_max_node_to_link('dispersed_layer_thickness', 'dispersed_layer_thickness')
-        Cd_links = self.grid.map_value_at_max_node_to_link('dispersed_concentration', 'dispersed_concentration')
+        ux_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'sliding_velocity_x'),
+        uy_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'sliding_velocity_y'),
+        Hf_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'fringe_thickness'),
+        Hd_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'dispersed_layer_thickness')
+        Cd_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'dispersed_concentration')
 
-        grad_ux = self.grid.calc_grad_at_link(ux)
-        grad_uy = self.grid.calc_grad_at_link(uy)
-        grad_Hf = self.grid.calc_grad_at_link(Hf)
-        grad_Hd = self.grid.calc_grad_at_link(Hd)
-        grad_Cd = self.grid.calc_grad_at_link(Cd)
+        ux_dx = self.grid.calc_diff_at_link(ux) / self.grid.dx
+        uy_dy = self.grid.calc_diff_at_link(uy) / self.grid.dy
+
+        Hf_dx = self.grid.calc_diff_at_link(Hf) / self.grid.dx
+        Hf_dy = self.grid.calc_diff_at_link(Hf) / self.grid.dy
+
+        Hd_dx = self.grid.calc_diff_at_link(Hd) / self.grid.dx
+        Hd_dy = self.grid.calc_diff_at_link(Hd) / self.grid.dy
+
+        Cd_dx = self.grid.calc_diff_at_link(Cd) / self.grid.dx
+        Cd_dy = self.grid.calc_diff_at_link(Cd) / self.grid.dy
 
         advect_Hf = self.grid.map_mean_of_links_to_node(
-            (ux_links * grad_Hf + uy_links * grad_Hf + Hf_links * grad_ux + Hf_links * grad_uy) * dt
+            (Hf_links * ux_dx + Hf_links * uy_dy + ux_links * Hf_dx + uy_links * Hf_dy) * dt
         )
 
         advect_Hd = self.grid.map_mean_of_links_to_node(
-            (ux_links * grad_Hd + uy_links * grad_Hd + Hd_links * grad_ux + Hd_links * grad_uy) * dt
+            (Hd_links * ux_dx + Hd_links * uy_dy + ux_links * Hd_dx + uy_links * Hd_dy) * dt
         )
 
         advect_Cd = self.grid.map_mean_of_links_to_node(
-            (ux_links * grad_Cd + uy_links * grad_Cd + Cd_links * grad_ux + Cd_links * grad_uy) * dt
+            (Cd_links * ux_dx + Cd_links * uy_dy + ux_links * Cd_dx + uy_links * Cd_dy) * dt
         )
 
         Hf[:] -= advect_Hf[:]

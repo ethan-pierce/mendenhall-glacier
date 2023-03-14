@@ -37,6 +37,10 @@ initial_dispersed_concentration = 0.05
 file = './inputs/igm-results/geology-optimized.nc'
 varname = 'thk'
 
+[inputs.surface_elevation]
+file = './inputs/igm-results/geology-optimized.nc'
+varname = 'usurf'
+
 [inputs.sliding_velocity_x]
 file = './inputs/igm-results/ex.nc'
 varname = 'uvelbase'
