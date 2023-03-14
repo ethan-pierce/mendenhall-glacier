@@ -16,16 +16,15 @@ basal_water_pressure = 0.9 * (
 )
 BIS.set_value('basal_water_pressure', basal_water_pressure)
 
-# First, run 200 years of erosion to create a supply of till
-# for t in range(1000):
-#     BIS.erode_bedrock(BIS.sec_per_a)
-
 initial_till = np.full(BIS.grid.number_of_nodes, 40)
 BIS.set_value('till_thickness', initial_till)
 
 # Second, spin-up the sediment entrainment module
 initial_fringe = np.full(BIS.grid.number_of_nodes, 1e-3)
 BIS.set_value('fringe_thickness', initial_fringe)
+
+initial_dispersed = np.full(BIS.grid.number_of_nodes, 1e-9)
+BIS.set_value('dispersed_layer_thickness', initial_dispersed)
 
 for t in range(100):
     BIS.entrain_sediment(t * 1e-2)
@@ -47,11 +46,22 @@ for t in range(2500):
 
 print('Completed spin-up: ' + str(np.round(BIS.time_elapsed / BIS.sec_per_a, 2)) + ' years elapsed.')
 
+BIS.plot_var(
+    'fringe_thickness', working_dir + '/outputs/Hf_spinup.png', 
+    units_label='m',
+    imshow_args={'vmin': 1e-3, 'vmax': np.percentile(BIS.grid.at_node['fringe_thickness'][:], 99)}
+)
+
+BIS.plot_var(
+    'dispersed_layer_thickness', working_dir + '/outputs/Hd_spinup.png', 
+    units_label='m'
+)
+
 for t in range(500):
     dt = 0.01 * BIS.sec_per_a
     BIS.run_one_step(dt, advect=True)
 
-    if t % 100 == 0:
+    if t % 1000 == 0:
         print('Completed step #' + str(t))
 
 print('Completed simulation: ' + str(np.round(BIS.time_elapsed / BIS.sec_per_a, 2)) + ' years elapsed.')
@@ -59,9 +69,8 @@ print('Completed simulation: ' + str(np.round(BIS.time_elapsed / BIS.sec_per_a, 
 # Plot output figures
 
 BIS.plot_var('till_thickness', working_dir + 'outputs/Ht.png', units_label='m')
-# BIS.plot_var('effective_pressure', working_dir + 'outputs/N.png', scalar=1e-3, units_label='kPa')
-# BIS.plot_var('basal_melt_rate', working_dir + 'outputs/Mb.png', scalar=BIS.sec_per_a, units_label='m/a')
-# BIS.plot_var('fringe_heave_rate', working_dir + 'outputs/heave.png', scalar=BIS.sec_per_a, units_label='m/a')
+BIS.plot_var('basal_melt_rate', working_dir + 'outputs/Mb.png', units_label='m/a', scalar=BIS.sec_per_a)
+BIS.plot_var('fringe_heave_rate', working_dir + 'outputs/heave.png', units_label='m/a', scalar=BIS.sec_per_a)
 
 BIS.plot_var(
     'fringe_thickness', working_dir + '/outputs/Hf.png', 
@@ -81,24 +90,29 @@ BIS.plot_var(
 )
 
 BIS.plot_var(
+    'dispersed_concentration', working_dir + '/outputs/Cd.png',
+    units_label='g sed. / g ice'
+)
+
+BIS.plot_var(
     'fringe_growth_rate', working_dir + '/outputs/dHf_dt.png', 
     units_label='m/a',
     scalar=BIS.sec_per_a,
-    imshow_args={'vmin': 0}
+    imshow_args={'vmin': 0, 'vmax': np.percentile(BIS.grid.at_node['fringe_growth_rate'][:], 99)}
 )
 
-# var = BIS.grid.map_mean_of_links_to_node(BIS.grid.calc_grad_at_link('sliding_velocity_x'))
-# field = np.where(
-#     BIS.grid.at_node['ice_thickness'][:] > 0.5,
-#     var * BIS.sec_per_a,
-#     np.nan
-# )
-# field = np.reshape(field, [BIS.grid.shape[1], BIS.grid.shape[0]])
-# im = plt.imshow(field)
-# plt.colorbar(im)
-# plt.title('sliding velocity x')
-# plt.savefig(working_dir + 'outputs/gradUx.png')
-# plt.close('all')
+var = BIS.grid.map_mean_of_links_to_node(BIS.grid.calc_grad_at_link('dispersed_layer_thickness'))
+field = np.where(
+    BIS.grid.at_node['ice_thickness'][:] > 0.5,
+    var,
+    np.nan
+)
+field = np.reshape(field, [BIS.grid.shape[1], BIS.grid.shape[0]])
+im = plt.imshow(field)
+plt.colorbar(im)
+plt.title('gradient in dispersed thickness (m/m)')
+plt.savefig(working_dir + 'outputs/gradHd.png')
+plt.close('all')
 
 # var = BIS.grid.map_mean_of_links_to_node(BIS.grid.calc_grad_at_link('sliding_velocity_y'))
 # field = np.where(
@@ -126,3 +140,4 @@ plt.colorbar(im)
 plt.title('gradient of fringe thickness (m/m)')
 plt.savefig(working_dir + 'outputs/gradHf.png')
 plt.close('all')
+

@@ -132,9 +132,11 @@ class BasalIceStratigrapher:
         N = self.grid.at_node['effective_pressure'][:]
         Us = self.grid.at_node['sliding_velocity_magnitude'][:]
 
-        N_reg = np.where(N != 0, N, np.nan)
+        N_reg = np.where(
+            self.grid.at_node['ice_thickness'] > 0.5, N, np.nan
+        )
         Ut = C * N_reg
-        tau_b = N * np.tan(theta) * np.float_power(Us / (Us + Ut), (1 / p))
+        tau_b = N_reg * np.tan(theta) * np.float_power(Us / (Us + Ut), (1 / p))
         
         self.grid.at_node['basal_shear_stress'][:] = tau_b[:]
 
@@ -299,7 +301,6 @@ class BasalIceStratigrapher:
         Hd = self.grid.at_node['dispersed_layer_thickness'][:]
 
         fringe_max_dh = self.grid.at_node['fringe_growth_rate'] * dt
-
         fringe_dh = np.minimum(fringe_max_dh, Ht / Cf)
         dispersed_dh = self.grid.at_node['dispersed_layer_growth_rate'] * dt
 
@@ -321,15 +322,32 @@ class BasalIceStratigrapher:
         Hd = self.grid.at_node['dispersed_layer_thickness'][:]
         Cd = self.grid.at_node['dispersed_concentration'][:]
         
-        grad_ux = self.grid.map_mean_of_links_to_node(self.grid.calc_grad_at_link(ux))
-        grad_uy = self.grid.map_mean_of_links_to_node(self.grid.calc_grad_at_link(uy))
-        grad_Hf = self.grid.map_mean_of_links_to_node(self.grid.calc_grad_at_link(Hf))
-        grad_Hd = self.grid.map_mean_of_links_to_node(self.grid.calc_grad_at_link(Hd))
-        grad_Cd = self.grid.map_mean_of_links_to_node(self.grid.calc_grad_at_link(Cd))
+        # TODO upwind with surface elevation
+        # TODO plot dt at a single point
+        # TODO check fringe under icefalls
+        ux_links = self.grid.map_mean_of_link_nodes_to_link(ux)
+        uy_links = self.grid.map_mean_of_link_nodes_to_link(uy)
+        Hf_links = self.grid.map_value_at_max_node_to_link('fringe_thickness', 'fringe_thickness'),
+        Hd_links = self.grid.map_value_at_max_node_to_link('dispersed_layer_thickness', 'dispersed_layer_thickness')
+        Cd_links = self.grid.map_value_at_max_node_to_link('dispersed_concentration', 'dispersed_concentration')
 
-        advect_Hf = (ux * grad_Hf + Hf * grad_ux + uy * grad_Hf + Hf * grad_uy) * dt
-        advect_Hd = (ux * grad_Hd + Hd * grad_ux + uy * grad_Hd + Hd * grad_uy) * dt
-        advect_Cd = (ux * grad_Cd + Cd * grad_ux + uy * grad_Cd + Cd * grad_uy) * dt
+        grad_ux = self.grid.calc_grad_at_link(ux)
+        grad_uy = self.grid.calc_grad_at_link(uy)
+        grad_Hf = self.grid.calc_grad_at_link(Hf)
+        grad_Hd = self.grid.calc_grad_at_link(Hd)
+        grad_Cd = self.grid.calc_grad_at_link(Cd)
+
+        advect_Hf = self.grid.map_mean_of_links_to_node(
+            (ux_links * grad_Hf + uy_links * grad_Hf + Hf_links * grad_ux + Hf_links * grad_uy) * dt
+        )
+
+        advect_Hd = self.grid.map_mean_of_links_to_node(
+            (ux_links * grad_Hd + uy_links * grad_Hd + Hd_links * grad_ux + Hd_links * grad_uy) * dt
+        )
+
+        advect_Cd = self.grid.map_mean_of_links_to_node(
+            (ux_links * grad_Cd + uy_links * grad_Cd + Cd_links * grad_ux + Cd_links * grad_uy) * dt
+        )
 
         Hf[:] -= advect_Hf[:]
         Hd[:] -= advect_Hd[:]
@@ -375,7 +393,7 @@ class BasalIceStratigrapher:
 
         im = plt.imshow(field, **imshow_args)
         plt.colorbar(im, **cbar_args)
-        plt.title(var.replace('_', ' ') + '(' + units_label + ')')
+        plt.title(var.replace('_', ' ') + ' (' + units_label + ')')
 
         if path_to_file:
             plt.savefig(path_to_file, **savefig_args)
