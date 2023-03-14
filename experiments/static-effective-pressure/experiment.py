@@ -46,6 +46,8 @@ for t in range(2500):
 
 print('Completed spin-up: ' + str(np.round(BIS.time_elapsed / BIS.sec_per_a, 2)) + ' years elapsed.')
 
+BIS.write_output(path_to_file)
+
 BIS.plot_var(
     'fringe_thickness', working_dir + '/outputs/Hf_spinup.png', 
     units_label='m',

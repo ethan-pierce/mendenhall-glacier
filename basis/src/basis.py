@@ -379,7 +379,20 @@ class BasalIceStratigrapher:
 
     def write_output(self, path_to_file: str):
         """Write output to a netcdf file."""
-        pass
+        ds = Dataset(path_to_file, 'w', format='NETCDF4')
+        
+        xdim = ds.createDimension('x')
+        ydim = ds.createDimension('y')
+        xs = ds.createVariable('x', 'f4', ('x',))
+        ys = ds.createVariable('y', 'f4', ('y',))
+
+        Hf = ds.createVariable('fringe_thickness', 'f4', ('y', 'x',))
+        Hf[:] = np.reshape(self.grid.at_node['fringe_thickness'][:], [self.grid.shape[1], self.grid.shape[0]])
+
+        Hd = ds.createVariable('dispersed_layer_thickness', 'f4', ('y', 'x',))
+        Hd[:] = np.reshape(self.grid.at_node['dispersed_layer_thickness'][:], [self.grid.shape[1], self.grid.shape[0]])
+
+        ds.close()
 
     def plot_var(self, 
                  var: str, 
