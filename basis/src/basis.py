@@ -128,7 +128,7 @@ class BasalIceStratigrapher:
         self.grid.at_node['effective_pressure'][:] = Pi - Pw
 
     def calc_shear_stress(self):
-        """Calculate the basal shear stress beneath the glacier (Zoet and Iverson, 2021)."""
+        """Calculate the basal shear stress beneath the glacier (Zoet and Iverson, 2020)."""
         C = self.params['slip_law_coefficient']
         p = self.params['shear_exponent']
         theta = np.deg2rad(self.params['friction_angle'])
