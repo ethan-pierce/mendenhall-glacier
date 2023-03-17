@@ -113,6 +113,52 @@ class BasalIceStratigrapher:
         """Set the value of a variable on the model grid."""
         self.grid.at_node[var][:] = value
 
+    def identify_terminus(self, bounds = []):
+        """Identify nodes that compose the glacier terminus."""
+        self.grid.add_zeros('is_terminus', at = 'node', clobber = True)
+
+        if len(bounds) != 4:
+            bounds = [0, self.grid.shape[1], 0, self.grid.shape[0]]
+
+        x0, x1, y0, y1 = bounds
+
+        def is_inbounds(node):
+            """Helper function to identify in-bounds nodes."""
+
+            x_condition = (self.grid.node_x[node] > x0) & (self.grid.node_x[node] < x1)
+            y_condition = (self.grid.node_y[node] > y0) & (self.grid.node_y[node] < y1)
+            h_condition = (self.grid.at_node['ice_thickness'][node] > 0.5)
+
+            if x_condition & y_condition & h_condition:
+                return True
+            else:
+                return False
+
+        self.east_boundary = []
+        self.north_boundary = []
+        self.west_boundary = []
+        self.south_boundary = []
+
+        for node_id in range(self.grid.number_of_nodes):
+            if is_inbounds(node_id):
+                neighbors = self.grid.active_adjacent_nodes_at_node[node_id]
+                
+                if -1 in neighbors:
+
+                    if (neighbors[0] == -1) & (self.grid.at_node['sliding_velocity_x'][node_id] > 0):
+                        self.east_boundary.append(node_id)
+                    
+                    if (neighbors[1] == -1) & (self.grid.at_node['sliding_velocity_y'][node_id] < 0):
+                        self.north_boundary.append(node_id)
+                    
+                    if (neighbors[2] == -1) & (self.grid.at_node['sliding_velocity_x'][node_id] < 0):
+                        self.west_boundary.append(node_id)
+                    
+                    if (neighbors[3] == -1) & (self.grid.at_node['sliding_velocity_y'][node_id] > 0):
+                        self.south_boundary.append(node_id)
+
+                    self.grid.at_node['is_terminus'][node_id] = 1
+
 ###################
 # Model processes #
 ###################
@@ -149,7 +195,7 @@ class BasalIceStratigrapher:
         m = self.params['erosion_exponent']
         Us = self.grid.at_node['sliding_velocity_magnitude'][:]
 
-        self.grid.at_node['erosion_rate'][:] = (Ks * Us**m) / self.sec_per_a 
+        self.grid.at_node['erosion_rate'][:] = (Ks * Us**m) 
 
     def calc_melt_rate(self):
         """Calculate the melt rate beneath the glacier."""
@@ -275,6 +321,72 @@ class BasalIceStratigrapher:
         # The dispersed layer thickness grows with the velocity of the fastest particles
         self.grid.at_node['dispersed_layer_growth_rate'][:] = (coeff * 3 * ki) / (1 + coeff * rho * L) * G
 
+    def calc_sediment_flux(self):
+        """Calculate the sediment flux from frozen fringe and dispersed ice layers."""
+        fringe_sediment_flux = 0.0
+        dispersed_sediment_flux = 0.0
+        
+        for node in range(self.grid.number_of_nodes):
+            if self.grid.at_node['is_terminus'][node] == 1:
+
+                if node in self.east_boundary:
+                    fringe_sediment_flux += (
+                        np.abs(self.grid.at_node['sliding_velocity_x'][node]) *
+                        self.grid.at_node['fringe_thickness'][node] * 
+                        (1 - self.params['frozen_fringe_porosity']) *
+                        self.grid.dy
+                    )
+                    dispersed_sediment_flux += (
+                        np.abs(self.grid.at_node['sliding_velocity_x'][node]) *
+                        self.grid.at_node['dispersed_layer_thickness'][node] * 
+                        self.grid.at_node['dispersed_concentration'][node] *
+                        self.grid.dy
+                    )
+
+                if node in self.north_boundary:
+                    fringe_sediment_flux += (
+                        np.abs(self.grid.at_node['sliding_velocity_y'][node]) *
+                        self.grid.at_node['fringe_thickness'][node] * 
+                        (1 - self.params['frozen_fringe_porosity']) *
+                        self.grid.dx
+                    )
+                    dispersed_sediment_flux += (
+                        np.abs(self.grid.at_node['sliding_velocity_y'][node]) *
+                        self.grid.at_node['dispersed_layer_thickness'][node] * 
+                        self.grid.at_node['dispersed_concentration'][node] *
+                        self.grid.dx
+                    )
+
+                if node in self.west_boundary:
+                    fringe_sediment_flux += (
+                        np.abs(self.grid.at_node['sliding_velocity_x'][node]) *
+                        self.grid.at_node['fringe_thickness'][node] * 
+                        (1 - self.params['frozen_fringe_porosity']) *
+                        self.grid.dy
+                    )
+                    dispersed_sediment_flux += (
+                        np.abs(self.grid.at_node['sliding_velocity_x'][node]) *
+                        self.grid.at_node['dispersed_layer_thickness'][node] * 
+                        self.grid.at_node['dispersed_concentration'][node] *
+                        self.grid.dy
+                    )
+
+                if node in self.south_boundary:
+                    fringe_sediment_flux += (
+                        np.abs(self.grid.at_node['sliding_velocity_y'][node]) *
+                        self.grid.at_node['fringe_thickness'][node] * 
+                        (1 - self.params['frozen_fringe_porosity']) *
+                        self.grid.dx
+                    )
+                    dispersed_sediment_flux += (
+                        np.abs(self.grid.at_node['sliding_velocity_y'][node]) *
+                        self.grid.at_node['dispersed_layer_thickness'][node] * 
+                        self.grid.at_node['dispersed_concentration'][node] *
+                        self.grid.dx
+                    )
+
+        return (fringe_sediment_flux, dispersed_sediment_flux)
+
 ##########
 # Update #
 ##########
@@ -377,20 +489,37 @@ class BasalIceStratigrapher:
 # Finalize #
 ############
 
-    def write_output(self, path_to_file: str):
+    def create_output_file(self, path_to_file: str):
         """Write output to a netcdf file."""
         ds = Dataset(path_to_file, 'w', format='NETCDF4')
         
         xdim = ds.createDimension('x')
         ydim = ds.createDimension('y')
+        tdim = ds.createDimension('time')
+
         xs = ds.createVariable('x', 'f4', ('x',))
         ys = ds.createVariable('y', 'f4', ('y',))
+        ts = ds.createVariable('time', 'f4', ('time',))
 
-        Hf = ds.createVariable('fringe_thickness', 'f4', ('y', 'x',))
-        Hf[:] = np.reshape(self.grid.at_node['fringe_thickness'][:], [self.grid.shape[1], self.grid.shape[0]])
+        xs[:] = self.grid.node_x
+        ys[:] = self.grid.node_y
+        ts[:] = np.arange(0)
 
-        Hd = ds.createVariable('dispersed_layer_thickness', 'f4', ('y', 'x',))
-        Hd[:] = np.reshape(self.grid.at_node['dispersed_layer_thickness'][:], [self.grid.shape[1], self.grid.shape[0]])
+        N = ds.createVariable('effective_pressure', 'f4', ('x', 'y',))
+        Ux = ds.createVariable('sliding_velocity_x', 'f4', ('x', 'y',))
+        Uy = ds.createVariable('sliding_velocity_y', 'f4', ('x', 'y',))
+        Mb = ds.createVariable('basal_melt_rate', 'f4', ('x', 'y',))
+
+        N[:] = np.reshape(self.grid.at_node['effective_pressure'][:], self.grid.shape)
+        Ux[:] = np.reshape(self.grid.at_node['sliding_velocity_x'][:], self.grid.shape)
+        Uy[:] = np.reshape(self.grid.at_node['sliding_velocity_y'][:], self.grid.shape)
+        Mb[:] = np.reshape(self.grid.at_node['basal_melt_rate'][:], self.grid.shape)
+
+        Ht = ds.createVariable('till_thickness', 'f4', ('time', 'x', 'y',))
+        Hf = ds.createVariable('fringe_thickness', 'f4', ('time', 'x', 'y',))
+        Hd = ds.createVariable('dispersed_layer_thickness', 'f4', ('time', 'x', 'y',))
+        dHd_dt = ds.createVariable('dispersed_layer_growth_rate', 'f4', ('time', 'x', 'y',))
+        Cd = ds.createVariable('dispersed_layer_concentration', 'f4', ('time', 'x', 'y',))
 
         ds.close()
 
@@ -408,7 +537,7 @@ class BasalIceStratigrapher:
             self.grid.at_node[var][:] * scalar,
             np.nan
         )
-        field = np.reshape(field, [self.grid.shape[1], self.grid.shape[0]])
+        field = np.reshape(field, [self.grid.shape[0], self.grid.shape[1]])
 
         im = plt.imshow(field, **imshow_args)
         plt.colorbar(im, **cbar_args)

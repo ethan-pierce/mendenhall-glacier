@@ -9,6 +9,12 @@ cfg = working_dir + 'input_file.toml'
 BIS = BasalIceStratigrapher()
 BIS.initialize(cfg)
 
+# Identify terminus nodes
+dx = BIS.grid.dx
+dy = BIS.grid.dy
+bounds = [50 * dx, 100 * dx, 300 * dy, 350 * dy]
+BIS.identify_terminus(bounds)
+
 pressure_scalars = np.arange(0.99, 0.59, -0.01)
 
 basal_water_pressure = 0.9 * (
@@ -46,7 +52,11 @@ for t in range(2500):
 
 print('Completed spin-up: ' + str(np.round(BIS.time_elapsed / BIS.sec_per_a, 2)) + ' years elapsed.')
 
-BIS.write_output(path_to_file)
+Qf, Qd = BIS.calc_sediment_flux()
+print('Qf = ' + str(Qf * BIS.sec_per_a))
+print('Qd = ' + str(Qd * BIS.sec_per_a))
+
+# BIS.write_output(path_to_file)
 
 BIS.plot_var(
     'fringe_thickness', working_dir + '/outputs/Hf_spinup.png', 
@@ -60,13 +70,17 @@ BIS.plot_var(
 )
 
 for t in range(20000):
-    dt = 0.0001 * BIS.sec_per_a
+    dt = 0.001 * BIS.sec_per_a
     BIS.run_one_step(dt, advect=True)
 
     if t % 1000 == 0:
         print('Completed step #' + str(t))
 
 print('Completed simulation: ' + str(np.round(BIS.time_elapsed / BIS.sec_per_a, 2)) + ' years elapsed.')
+
+Qf, Qd = BIS.calc_sediment_flux()
+print('Qf = ' + str(Qf * BIS.sec_per_a))
+print('Qd = ' + str(Qd * BIS.sec_per_a))
 
 # Plot output figures
 

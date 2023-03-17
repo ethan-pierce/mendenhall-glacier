@@ -2,11 +2,11 @@ import pytest
 import numpy as np
 from numpy.testing import assert_array_almost_equal, assert_approx_equal
 
-from src.basis import BasalIceStratigrapher
+from basis.src.basis import BasalIceStratigrapher
 
 def test_initialize():
     """Test that the model can be initialized with a config file."""
-    cfg = './code/test/input_file.toml'
+    cfg = './basis/test/input_file.toml'
     BIS = BasalIceStratigrapher()
     BIS.initialize(config = cfg)
 
@@ -17,7 +17,7 @@ def test_initialize():
 
 def test_set_value():
     """Test that we can override model values."""
-    cfg = './code/test/input_file.toml'
+    cfg = './basis/test/input_file.toml'
     BIS = BasalIceStratigrapher()
     BIS.initialize(config = cfg)
 
@@ -29,7 +29,7 @@ def test_set_value():
 
 def test_calc_effective_pressure():
     """Test that the model calculates effective pressure correctly."""
-    cfg = './code/test/input_file.toml'
+    cfg = './basis/test/input_file.toml'
     BIS = BasalIceStratigrapher()
     BIS.initialize(config = cfg)
 
@@ -43,7 +43,7 @@ def test_calc_effective_pressure():
 
 def test_calc_shear_stress():
     """Test that the model calculates shear stress correctly."""
-    cfg = './code/test/input_file.toml'
+    cfg = './basis/test/input_file.toml'
     BIS = BasalIceStratigrapher()
     BIS.initialize(config = cfg)
 
@@ -55,11 +55,11 @@ def test_calc_shear_stress():
 
     BIS.calc_shear_stress()
 
-    assert_approx_equal(BIS.grid.at_node['basal_shear_stress'][5] / 1e3, 56.21, significant=4)
+    assert_approx_equal(BIS.grid.at_node['basal_shear_stress'][5] / 1e3, 51.10, significant=4)
 
 def test_calc_erosion_rate():
     """Test that the model calculates erosion rates correctly."""
-    cfg = './code/test/input_file.toml'
+    cfg = './basis/test/input_file.toml'
     BIS = BasalIceStratigrapher()
     BIS.initialize(config = cfg)
 
@@ -75,7 +75,7 @@ def test_calc_erosion_rate():
 
 def test_calc_melt_rate():
     """Test that the model calculates melt rates correctly."""
-    cfg = './code/test/input_file.toml'
+    cfg = './basis/test/input_file.toml'
     BIS = BasalIceStratigrapher()
     BIS.initialize(config = cfg)
 
@@ -89,11 +89,11 @@ def test_calc_melt_rate():
 
     BIS.calc_melt_rate()
 
-    assert_approx_equal(BIS.grid.at_node['basal_melt_rate'][5], 0.0092, significant=2)
+    assert_approx_equal(BIS.grid.at_node['basal_melt_rate'][5], 4.616e-10, significant=2)
 
 def test_calc_thermal_gradients():
     """Test that the model calculates thermal gradients correctly."""
-    cfg = './code/test/input_file.toml'
+    cfg = './basis/test/input_file.toml'
     BIS = BasalIceStratigrapher()
     BIS.initialize(config = cfg)
 
@@ -105,12 +105,12 @@ def test_calc_thermal_gradients():
 
     BIS.calc_thermal_gradients()
 
-    assert_approx_equal(BIS.grid.at_node['fringe_thermal_gradient'][5], -619200, significant=4)
+    assert_approx_equal(BIS.grid.at_node['fringe_thermal_gradient'][5], -0.03099, significant=4)
     assert_approx_equal(BIS.grid.at_node['transition_temperature'][5], 272.9, significant=4)
 
 def test_calc_fringe_growth_rate():
     """Test that the model calculates the fringe growth rate correctly."""
-    cfg = './code/test/input_file.toml'
+    cfg = './basis/test/input_file.toml'
     BIS = BasalIceStratigrapher()
     BIS.initialize(config = cfg)
 
@@ -133,7 +133,7 @@ def test_calc_fringe_growth_rate():
 
 def test_calc_fringe_growth_rate():
     """Test that the model calculates the fringe growth rate correctly."""
-    cfg = './code/test/input_file.toml'
+    cfg = './basis/test/input_file.toml'
     BIS = BasalIceStratigrapher()
     BIS.initialize(config = cfg)
 
@@ -151,12 +151,12 @@ def test_calc_fringe_growth_rate():
 
     BIS.calc_regelation_rate()
 
-    assert_approx_equal(BIS.grid.at_node['dispersed_layer_gradient'][5], 0.06798, significant=4)
-    assert_approx_equal(BIS.grid.at_node['dispersed_layer_growth_rate'][5] * 3.14e7, 0.04181, significant=4)
+    assert_approx_equal(BIS.grid.at_node['dispersed_layer_gradient'][5], 0.006061, significant=4)
+    assert_approx_equal(BIS.grid.at_node['dispersed_layer_growth_rate'][5] * 3.14e7, 0.003728, significant=4)
 
 def test_erode_bedrock():
     "Test that the eroder updates till thickness."
-    cfg = './code/test/input_file.toml'
+    cfg = './basis/test/input_file.toml'
     BIS = BasalIceStratigrapher()
     BIS.initialize(config = cfg)
 
@@ -169,7 +169,7 @@ def test_erode_bedrock():
 
 def test_entrain_sediment():
     "Test that the entrainer updates layer thicknesses."
-    cfg = './code/test/input_file.toml'
+    cfg = './basis/test/input_file.toml'
     BIS = BasalIceStratigrapher()
     BIS.initialize(config = cfg)
 
@@ -184,13 +184,13 @@ def test_entrain_sediment():
 
     BIS.entrain_sediment(1.0)
 
-    assert_approx_equal(BIS.grid.at_node['till_thickness'][5], 5.009, significant=4)
-    assert_approx_equal(BIS.grid.at_node['fringe_thickness'][5], 1e-6, significant=4)
-    assert_approx_equal(BIS.grid.at_node['dispersed_layer_thickness'][5], 1.213e-6, significant=4)
+    assert_approx_equal(BIS.grid.at_node['till_thickness'][5], 5.0, significant=4)
+    assert_approx_equal(BIS.grid.at_node['fringe_thickness'][5], 0.001027, significant=4)
+    assert_approx_equal(BIS.grid.at_node['dispersed_layer_thickness'][5], 1.188e-10, significant=4)
 
 def test_advect_sediment():
     """Test that the model correctly advects sediment layers."""
-    cfg = './code/test/input_file.toml'
+    cfg = './basis/test/input_file.toml'
     BIS = BasalIceStratigrapher()
     BIS.initialize(config = cfg)
 
@@ -207,13 +207,13 @@ def test_advect_sediment():
 
     BIS.advect_sediment(100.0)
 
-    assert_approx_equal(BIS.grid.at_node['till_thickness'][5], 5.922, significant=4)
-    assert_approx_equal(BIS.grid.at_node['fringe_thickness'][5], 1e-6, significant=4)
-    assert_approx_equal(BIS.grid.at_node['dispersed_layer_thickness'][5], 1.213e-4, significant=4)
+    assert_approx_equal(BIS.grid.at_node['till_thickness'][5], 4.999, significant=4)
+    assert_approx_equal(BIS.grid.at_node['fringe_thickness'][5], 0.003655, significant=4)
+    assert_approx_equal(BIS.grid.at_node['dispersed_layer_thickness'][5], 1.188e-8, significant=4)
 
 def test_run_one_step():
     """Test that the model can rull all update routines together."""
-    cfg = './code/test/input_file.toml'
+    cfg = './basis/test/input_file.toml'
     BIS = BasalIceStratigrapher()
     BIS.initialize(config = cfg)
 
@@ -228,6 +228,6 @@ def test_run_one_step():
 
     BIS.run_one_step(1.0)
 
-    assert_approx_equal(BIS.grid.at_node['till_thickness'][5], 5.009, significant=4)
-    assert_approx_equal(BIS.grid.at_node['fringe_thickness'][5], 1e-6, significant=4)
-    assert_approx_equal(BIS.grid.at_node['dispersed_layer_thickness'][5], 1.213e-6, significant=4)
+    assert_approx_equal(BIS.grid.at_node['till_thickness'][5], 5.0, significant=4)
+    assert_approx_equal(BIS.grid.at_node['fringe_thickness'][5], 0.001027, significant=4)
+    assert_approx_equal(BIS.grid.at_node['dispersed_layer_thickness'][5], 1.188e-10, significant=4)

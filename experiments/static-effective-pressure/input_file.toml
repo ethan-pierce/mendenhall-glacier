@@ -1,7 +1,7 @@
 name = 'mendenhall'
 
 [grid]
-shape = [274, 328]
+shape = [328, 274]
 spacing = 50.0
 
 [parameters]

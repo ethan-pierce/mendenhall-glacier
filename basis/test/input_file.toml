@@ -37,13 +37,17 @@ initial_dispersed_concentration = 0.05
 file = ''
 value = 100
 
+[inputs.surface_elevation]
+file = ''
+value = 100
+
 [inputs.sliding_velocity_x]
 file = ''
-value = 5
+value = 5.0
 
 [inputs.sliding_velocity_y]
 file = ''
-value = 50
+value = 50.0
 
 [inputs.basal_water_pressure]
 file = ''
