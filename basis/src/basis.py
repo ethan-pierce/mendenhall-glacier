@@ -399,35 +399,37 @@ class BasalIceStratigrapher:
 
         self.grid.at_node['till_thickness'][:] += self.grid.at_node['erosion_rate'][:] * dt
 
-    def entrain_sediment(self, dt: float, already_eroded = False, clamp = True):
+    def entrain_sediment(self, dt: float, clamp = 99):
         """Run one step, only entraining sediment (if available) in basal ice layers."""
-        if not already_eroded:
-            self.calc_effective_pressure()
-            self.calc_shear_stress()
-
-        self.calc_melt_rate()
         self.calc_thermal_gradients()
         self.calc_fringe_growth_rate()
         self.calc_regelation_rate()
 
         Ht = self.grid.at_node['till_thickness'][:]
         Hf = self.grid.at_node['fringe_thickness'][:]
-        Cf = self.params['frozen_fringe_porosity']
         Hd = self.grid.at_node['dispersed_layer_thickness'][:]
 
-        fringe_max_dh = self.grid.at_node['fringe_growth_rate'] * dt
-        fringe_dh = np.minimum(fringe_max_dh, Ht / Cf)
-        dispersed_dh = self.grid.at_node['dispersed_layer_growth_rate'] * dt
+        fringe_dH = self.grid.at_node['fringe_growth_rate'] * dt
 
-        Ht[:] -= np.where(fringe_dh > 0, Cf * fringe_dh, 0)
-        Hf[:] += fringe_dh[:]
-        Hd[:] += dispersed_dh[:]
+        if clamp > 0:
+            # fix some problems that arise with anomalous fringe growth rates
+            fringe_dH = np.where(
+                fringe_dH > np.percentile(fringe_dH, clamp),
+                np.percentile(fringe_dH, clamp),
+                fringe_dH
+            )
 
+        dispersed_dH = self.grid.at_node['dispersed_layer_growth_rate'] * dt
+
+        Ht[:] -= fringe_dH
+        Hf[:] += fringe_dH
+        Hd[:] += dispersed_dH
+
+        # physically, till thickness cannot be negative
         Ht[:] = np.where(Ht < 0, 0, Ht)
-        Hf[:] = np.where(Hf <= 1e-6, 1e-6, Hf)
 
-        if clamp:
-            Hf[:] = np.where(Hf > np.percentile(Hf, 99), np.percentile(Hf, 99), Hf)
+        # for numerical stability, fringe thickness cannot drop below 10^-6 m
+        Hf[:] = np.where(Hf <= 1e-6, 1e-6, Hf)
 
     def advect_fringe(self, dt: float):
         """Advect the frozen fringe via basal sliding."""
@@ -452,56 +454,35 @@ class BasalIceStratigrapher:
 
         diffuse_Hf = k * self.grid.calc_flux_div_at_node(Hf_dx + Hf_dy)
 
-        # Hf[:] -= (advect_Hf + diffuse_Hf) * dt
-        Hf[:] -= diffuse_Hf * dt
-        Hf[Hf < 1e-3] = 1e-3
+        Hf[:] -= (advect_Hf + diffuse_Hf) * dt
+        Hf[Hf < 1e-6] = 1e-6
 
-    def advect_sediment(self, dt: float):
-        """Run one step, only advecting sediment packages via basal sliding."""
+    def advect_dispersed_layer(self, dt: float):
+        """Advect the dispersed sediment layers via basal sliding."""
+        """Advect the frozen fringe via basal sliding."""
         ux = self.grid.at_node['sliding_velocity_x'][:]
         uy = self.grid.at_node['sliding_velocity_y'][:]
-        Hf = self.grid.at_node['fringe_thickness'][:]
         Hd = self.grid.at_node['dispersed_layer_thickness'][:]
-        Cd = self.grid.at_node['dispersed_concentration'][:]
         k = self.params['numerical_diffusivity']
-        
-        ux_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'sliding_velocity_x'),
-        uy_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'sliding_velocity_y'),
-        Hf_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'fringe_thickness'),
+
+        ux_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'sliding_velocity_x')
+        uy_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'sliding_velocity_y')
         Hd_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'dispersed_layer_thickness')
-        Cd_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'dispersed_concentration')
 
         ux_dx = self.grid.calc_diff_at_link(ux) / self.grid.dx
         uy_dy = self.grid.calc_diff_at_link(uy) / self.grid.dy
 
-        Hf_dx = self.grid.calc_diff_at_link(Hf) / self.grid.dx
-        Hf_dy = self.grid.calc_diff_at_link(Hf) / self.grid.dy
-
         Hd_dx = self.grid.calc_diff_at_link(Hd) / self.grid.dx
         Hd_dy = self.grid.calc_diff_at_link(Hd) / self.grid.dy
 
-        Cd_dx = self.grid.calc_diff_at_link(Cd) / self.grid.dx
-        Cd_dy = self.grid.calc_diff_at_link(Cd) / self.grid.dy
-
-        advect_Hf = self.grid.map_mean_of_links_to_node(
-            (Hf_links * ux_dx + Hf_links * uy_dy + ux_links * Hf_dx + uy_links * Hf_dy) * dt
-        )
-
         advect_Hd = self.grid.map_mean_of_links_to_node(
-            (Hd_links * ux_dx + Hd_links * uy_dy + ux_links * Hd_dx + uy_links * Hd_dy) * dt
+            Hd_links * (ux_dx + uy_dy) + ux_links * Hd_dx + uy_links * Hd_dy 
         )
 
-        advect_Cd = self.grid.map_mean_of_links_to_node(
-            (Cd_links * ux_dx + Cd_links * uy_dy + ux_links * Cd_dx + uy_links * Cd_dy) * dt
-        )
+        diffuse_Hd = k * self.grid.calc_flux_div_at_node(Hd_dx + Hd_dy)
 
-        Hf[:] -= advect_Hf[:]
-        Hd[:] -= advect_Hd[:]
-        Cd[:] -= advect_Cd[:]
-        
-        Hf[:] = np.where(Hf <= 0, 1e-6, Hf[:])
-        Hd[:] = np.where(Hd <= 0, 0.0, Hd[:])
-        Cd[:] = np.where(Cd <= 0, 1e-3, Cd[:])
+        Hd[:] -= (advect_Hd + diffuse_Hd) * dt
+        Hd[Hd < 1e-3] = 1e-3
 
     def run_one_step(self, dt: float, advect = True):
         """Run one step with all process models."""
