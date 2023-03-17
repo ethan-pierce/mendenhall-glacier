@@ -15,8 +15,6 @@ dy = BIS.grid.dy
 bounds = [50 * dx, 100 * dx, 300 * dy, 350 * dy]
 BIS.identify_terminus(bounds)
 
-pressure_scalars = np.arange(0.99, 0.59, -0.01)
-
 basal_water_pressure = 0.9 * (
     BIS.grid.at_node['ice_thickness'] * BIS.params['ice_density'] * BIS.params['gravity']
 )
@@ -56,8 +54,6 @@ Qf, Qd = BIS.calc_sediment_flux()
 print('Qf = ' + str(Qf * BIS.sec_per_a))
 print('Qd = ' + str(Qd * BIS.sec_per_a))
 
-# BIS.write_output(path_to_file)
-
 BIS.plot_var(
     'fringe_thickness', working_dir + '/outputs/Hf_spinup.png', 
     units_label='m',
@@ -69,12 +65,21 @@ BIS.plot_var(
     units_label='m'
 )
 
-for t in range(20000):
-    dt = 0.001 * BIS.sec_per_a
-    BIS.run_one_step(dt, advect=True)
+nt = 10000
+n_save = 10
+BIS.create_output_file(working_dir + '/outputs/sediment.nc', n_steps = n_save)
 
-    if t % 1000 == 0:
+for t in range(nt):
+    dt = 0.01 * BIS.sec_per_a
+    # BIS.entrain_sediment(dt)
+    BIS.advect_fringe(dt)
+
+    BIS.time_elapsed += dt
+
+    if t % int(nt / n_save) == 0:
         print('Completed step #' + str(t))
+
+        BIS.write_output(working_dir + '/outputs/sediment.nc')
 
 print('Completed simulation: ' + str(np.round(BIS.time_elapsed / BIS.sec_per_a, 2)) + ' years elapsed.')
 
@@ -114,46 +119,9 @@ BIS.plot_var(
     'fringe_growth_rate', working_dir + '/outputs/dHf_dt.png', 
     units_label='m/a',
     scalar=BIS.sec_per_a,
-    imshow_args={'vmin': 0}
+    imshow_args={
+        'vmin': 0, 
+        'vmax': np.percentile(BIS.grid.at_node['fringe_growth_rate'][:], 99)
+    }
 )
-
-var = BIS.grid.map_mean_of_links_to_node(BIS.grid.calc_grad_at_link('dispersed_layer_thickness'))
-field = np.where(
-    BIS.grid.at_node['ice_thickness'][:] > 0.5,
-    var,
-    np.nan
-)
-field = np.reshape(field, [BIS.grid.shape[1], BIS.grid.shape[0]])
-im = plt.imshow(field)
-plt.colorbar(im)
-plt.title('gradient in dispersed thickness (m/m)')
-plt.savefig(working_dir + 'outputs/gradHd.png')
-plt.close('all')
-
-# var = BIS.grid.map_mean_of_links_to_node(BIS.grid.calc_grad_at_link('sliding_velocity_y'))
-# field = np.where(
-#     BIS.grid.at_node['ice_thickness'][:] > 0.5,
-#     var * BIS.sec_per_a,
-#     np.nan
-# )
-# field = np.reshape(field, [BIS.grid.shape[1], BIS.grid.shape[0]])
-# im = plt.imshow(field)
-# plt.colorbar(im)
-# plt.title('sliding velocity y')
-# plt.savefig(working_dir + 'outputs/gradUy.png')
-# plt.close('all')
-
-
-var = BIS.grid.map_mean_of_links_to_node(BIS.grid.calc_grad_at_link('fringe_thickness'))
-field = np.where(
-    BIS.grid.at_node['ice_thickness'][:] > 0.5,
-    var,
-    np.nan
-)
-field = np.reshape(field, [BIS.grid.shape[1], BIS.grid.shape[0]])
-im = plt.imshow(field)
-plt.colorbar(im)
-plt.title('gradient of fringe thickness (m/m)')
-plt.savefig(working_dir + 'outputs/gradHf.png')
-plt.close('all')
 

@@ -429,6 +429,33 @@ class BasalIceStratigrapher:
         if clamp:
             Hf[:] = np.where(Hf > np.percentile(Hf, 99), np.percentile(Hf, 99), Hf)
 
+    def advect_fringe(self, dt: float):
+        """Advect the frozen fringe via basal sliding."""
+        ux = self.grid.at_node['sliding_velocity_x'][:]
+        uy = self.grid.at_node['sliding_velocity_y'][:]
+        Hf = self.grid.at_node['fringe_thickness'][:]
+        k = self.params['numerical_diffusivity']
+
+        ux_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'sliding_velocity_x')
+        uy_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'sliding_velocity_y')
+        Hf_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'fringe_thickness')
+
+        ux_dx = self.grid.calc_diff_at_link(ux) / self.grid.dx
+        uy_dy = self.grid.calc_diff_at_link(uy) / self.grid.dy
+
+        Hf_dx = self.grid.calc_diff_at_link(Hf) / self.grid.dx
+        Hf_dy = self.grid.calc_diff_at_link(Hf) / self.grid.dy
+
+        advect_Hf = self.grid.map_mean_of_links_to_node(
+            Hf_links * (ux_dx + uy_dy) + ux_links * Hf_dx + uy_links * Hf_dy 
+        )
+
+        diffuse_Hf = k * self.grid.calc_flux_div_at_node(Hf_dx + Hf_dy)
+
+        # Hf[:] -= (advect_Hf + diffuse_Hf) * dt
+        Hf[:] -= diffuse_Hf * dt
+        Hf[Hf < 1e-3] = 1e-3
+
     def advect_sediment(self, dt: float):
         """Run one step, only advecting sediment packages via basal sliding."""
         ux = self.grid.at_node['sliding_velocity_x'][:]
@@ -436,6 +463,7 @@ class BasalIceStratigrapher:
         Hf = self.grid.at_node['fringe_thickness'][:]
         Hd = self.grid.at_node['dispersed_layer_thickness'][:]
         Cd = self.grid.at_node['dispersed_concentration'][:]
+        k = self.params['numerical_diffusivity']
         
         ux_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'sliding_velocity_x'),
         uy_links = self.grid.map_value_at_max_node_to_link('surface_elevation', 'sliding_velocity_y'),
@@ -489,7 +517,7 @@ class BasalIceStratigrapher:
 # Finalize #
 ############
 
-    def create_output_file(self, path_to_file: str):
+    def create_output_file(self, path_to_file: str, n_steps = 1):
         """Write output to a netcdf file."""
         ds = Dataset(path_to_file, 'w', format='NETCDF4')
         
@@ -503,25 +531,35 @@ class BasalIceStratigrapher:
 
         xs[:] = self.grid.node_x
         ys[:] = self.grid.node_y
-        ts[:] = np.arange(0)
+        ts[:] = np.arange(0, n_steps + 1, 1)
 
-        N = ds.createVariable('effective_pressure', 'f4', ('x', 'y',))
-        Ux = ds.createVariable('sliding_velocity_x', 'f4', ('x', 'y',))
-        Uy = ds.createVariable('sliding_velocity_y', 'f4', ('x', 'y',))
-        Mb = ds.createVariable('basal_melt_rate', 'f4', ('x', 'y',))
+        N = ds.createVariable('effective_pressure', 'f4', ('time', 'x', 'y',))
+        Ux = ds.createVariable('sliding_velocity_x', 'f4', ('time', 'x', 'y',))
+        Uy = ds.createVariable('sliding_velocity_y', 'f4', ('time', 'x', 'y',))
+        Mb = ds.createVariable('basal_melt_rate', 'f4', ('time', 'x', 'y',))
 
-        N[:] = np.reshape(self.grid.at_node['effective_pressure'][:], self.grid.shape)
-        Ux[:] = np.reshape(self.grid.at_node['sliding_velocity_x'][:], self.grid.shape)
-        Uy[:] = np.reshape(self.grid.at_node['sliding_velocity_y'][:], self.grid.shape)
-        Mb[:] = np.reshape(self.grid.at_node['basal_melt_rate'][:], self.grid.shape)
+        N[0] = np.reshape(self.grid.at_node['effective_pressure'][:], self.grid.shape)
+        Ux[0] = np.reshape(self.grid.at_node['sliding_velocity_x'][:], self.grid.shape)
+        Uy[0] = np.reshape(self.grid.at_node['sliding_velocity_y'][:], self.grid.shape)
+        Mb[0] = np.reshape(self.grid.at_node['basal_melt_rate'][:], self.grid.shape)
 
         Ht = ds.createVariable('till_thickness', 'f4', ('time', 'x', 'y',))
         Hf = ds.createVariable('fringe_thickness', 'f4', ('time', 'x', 'y',))
         Hd = ds.createVariable('dispersed_layer_thickness', 'f4', ('time', 'x', 'y',))
         dHd_dt = ds.createVariable('dispersed_layer_growth_rate', 'f4', ('time', 'x', 'y',))
-        Cd = ds.createVariable('dispersed_layer_concentration', 'f4', ('time', 'x', 'y',))
+        Cd = ds.createVariable('dispersed_concentration', 'f4', ('time', 'x', 'y',))
 
         ds.close()
+
+    def write_output(self, path_to_file: str, t = 1):
+        """Write out results from one time step to a netcdf file."""
+        ds = Dataset(path_to_file, 'r+', format='NETCDF4')
+        
+        ds.variables['till_thickness'][t] = np.reshape(self.grid.at_node['till_thickness'][:], self.grid.shape)
+        ds.variables['fringe_thickness'][t] = np.reshape(self.grid.at_node['fringe_thickness'][:], self.grid.shape)
+        ds.variables['dispersed_layer_thickness'][t] = np.reshape(self.grid.at_node['dispersed_layer_thickness'][:], self.grid.shape)
+        ds.variables['dispersed_layer_growth_rate'][t] = np.reshape(self.grid.at_node['dispersed_layer_growth_rate'][:], self.grid.shape)
+        ds.variables['dispersed_concentration'][t] = np.reshape(self.grid.at_node['dispersed_concentration'][:], self.grid.shape)
 
     def plot_var(self, 
                  var: str, 
