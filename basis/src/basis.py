@@ -272,7 +272,7 @@ class BasalIceStratigrapher:
         pf = self.params['entry_pressure']
 
         # Throwaway variables for long coefficients
-        A = theta + phi * (1 - theta + (1 / (1 - beta)) * (theta**(1 - beta) - 1))
+        A = theta + phi * (1 - theta + ((1 / (1 - beta)) * (theta**(1 - beta) - 1)))
         B = ((1 - phi)**2 / (alpha + 1)) * (theta**(alpha + 1) - 1)
         C = ((2 * (1 - phi) * phi) / (alpha - beta + 1)) * (theta**(alpha - beta + 1) - 1)
         D = (phi**2 / (alpha - 2 * beta + 1)) * (theta**(alpha - 2 * beta + 1) - 1)
@@ -484,10 +484,13 @@ class BasalIceStratigrapher:
         Hd[:] -= (advect_Hd + diffuse_Hd) * dt
         Hd[Hd < 1e-3] = 1e-3
 
-    def run_one_step(self, dt: float, advect = True):
+    def run_one_step(self, dt: float, erode = True, entrain = True, advect = True):
         """Run one step with all process models."""
-        self.erode_bedrock(dt)
-        self.entrain_sediment(dt)
+        if erode:
+            self.erode_bedrock(dt)
+
+        if entrain:
+            self.entrain_sediment(dt)
 
         if advect:
             self.advect_sediment(dt)

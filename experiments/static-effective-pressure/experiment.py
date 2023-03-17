@@ -9,6 +9,10 @@ cfg = working_dir + 'input_file.toml'
 BIS = BasalIceStratigrapher()
 BIS.initialize(cfg)
 
+BIS.calc_effective_pressure()
+BIS.calc_shear_stress()
+BIS.calc_erosion_rate()
+
 # Identify terminus nodes
 dx = BIS.grid.dx
 dy = BIS.grid.dy
