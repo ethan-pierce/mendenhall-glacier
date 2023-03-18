@@ -12,13 +12,18 @@ parameters = pd.read_csv(
     usecols = [0, 1, 2, 3, 4]
 )
 
-n_runs = 20
+n_runs = 10
 n_years = 100
 
 results = pd.DataFrame(
     columns = [
         'variable',
         'value',
+        'entry_pressure',
+        'basal_shear_stress',
+        'basal_melt_rate',
+        'fringe_heave_rate',
+        'fringe_growth_rate',
         'fringe_thickness',
         'fringe_sedflux',
         'dispersed_layer_thickness',
@@ -28,20 +33,42 @@ results = pd.DataFrame(
 )
 
 for idx, info in parameters.iterrows():
-    experiments = np.linspace(info.values[1], info.values[2], n_runs)
-    results.append
+    if info.variable == 'default':
+        experiments = [0]
+    elif info.variable in ['effective_pressure', 'sliding_velocity_x']:
+        experiments = np.geomspace(info.values[1], info.values[2], n_runs)
+    else:
+        experiments = np.linspace(info.values[1], info.values[2], n_runs)        
     
     for exp in experiments:
         BIS = BasalIceStratigrapher()
         BIS.initialize(working_dir + 'default.toml')
 
-        BIS.set_value(info.variable, np.full(BIS.grid.number_of_nodes, exp))
+        try:
+            BIS.set_value(info.variable, np.full(BIS.grid.number_of_nodes, exp))
+        except:
+            BIS.params[info.variable] = exp
+
+        if info.variable == 'sliding_velocity_x':
+            BIS.grid.at_node['sliding_velocity_x'] *= (1 / BIS.sec_per_a)
+
+            BIS.grid.at_node['sliding_velocity_magnitude'][:] = np.abs(
+                np.sqrt(BIS.grid.at_node['sliding_velocity_x'][:]**2 + BIS.grid.at_node['sliding_velocity_y'][:]**2)
+            )
+
         BIS.set_value('till_thickness', np.full(BIS.grid.number_of_nodes, 20))
         BIS.set_value('fringe_thickness', np.full(BIS.grid.number_of_nodes, 1e-3))
 
-        BIS.calc_shear_stress()
-        BIS.calc_melt_rate()
+        if info.variable != 'effective_pressure':
+            BIS.calc_effective_pressure()
 
+        if info.variable == 'basal_shear_stress':
+            BIS.set_value('basal_shear_stress', np.full(BIS.grid.number_of_nodes, exp))
+        else:
+            BIS.calc_shear_stress()
+
+        BIS.calc_melt_rate()
+        
         for t in range(100):
             BIS.entrain_sediment(t * 1e-2)
 
@@ -59,6 +86,7 @@ for idx, info in parameters.iterrows():
         fringe_sedflux = (
             BIS.grid.at_node['fringe_thickness'][4] * 
             BIS.grid.at_node['sliding_velocity_x'][4] * 
+            BIS.sec_per_a * 
             (1 - BIS.params['frozen_fringe_porosity']) *
             BIS.params['sediment_density']
         )
@@ -66,6 +94,7 @@ for idx, info in parameters.iterrows():
         dispersed_sedflux = (
             BIS.grid.at_node['dispersed_layer_thickness'][4] * 
             BIS.grid.at_node['sliding_velocity_x'][4] * 
+            BIS.sec_per_a *
             BIS.grid.at_node['dispersed_concentration'][4] *
             BIS.params['sediment_density']
         )
@@ -73,6 +102,11 @@ for idx, info in parameters.iterrows():
         result = [
             info.variable,
             exp,
+            BIS.params['entry_pressure'],
+            BIS.grid.at_node['basal_shear_stress'][4],
+            BIS.grid.at_node['basal_melt_rate'][4],
+            BIS.grid.at_node['fringe_heave_rate'][4],
+            BIS.grid.at_node['fringe_growth_rate'][4],
             BIS.grid.at_node['fringe_thickness'][4],
             fringe_sedflux,
             BIS.grid.at_node['dispersed_layer_thickness'][4],
@@ -87,6 +121,4 @@ for idx, info in parameters.iterrows():
         print(results.tail())
         print('------------------------------------------')
 
-    break
-
-results.to_csv(working_dir + 'results.csv')
+results.to_csv(working_dir + '/outputs/results.csv')
