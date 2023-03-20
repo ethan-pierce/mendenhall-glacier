@@ -319,8 +319,8 @@ class BasalIceStratigrapher:
         coeff = (K * rho * L) / (mu * Tm * (2 * ki + kp))
 
         # The dispersed layer thickness grows with the velocity of the fastest particles
-        self.grid.at_node['dispersed_layer_growth_rate'][:] = (coeff * 3 * ki) / (1 + coeff * rho * L) * G
-
+        self.grid.at_node['dispersed_layer_growth_rate'][:] = G * (coeff * 3 * ki) / (1 + coeff * rho * L)
+        
     def calc_sediment_flux(self):
         """Calculate the sediment flux from frozen fringe and dispersed ice layers."""
         fringe_sediment_flux = 0.0

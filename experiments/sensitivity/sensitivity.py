@@ -12,8 +12,8 @@ parameters = pd.read_csv(
     usecols = [0, 1, 2, 3, 4]
 )
 
-n_runs = 10
-n_years = 100
+n_runs = 20
+n_years = 200
 
 results = pd.DataFrame(
     columns = [
@@ -56,6 +56,10 @@ for idx, info in parameters.iterrows():
                 np.sqrt(BIS.grid.at_node['sliding_velocity_x'][:]**2 + BIS.grid.at_node['sliding_velocity_y'][:]**2)
             )
 
+        if info.variable == 'coupled_grain_size':
+            BIS.params['pore_throat_radius'] = exp
+            BIS.params['till_grain_radius'] = exp
+
         BIS.set_value('till_thickness', np.full(BIS.grid.number_of_nodes, 20))
         BIS.set_value('fringe_thickness', np.full(BIS.grid.number_of_nodes, 1e-3))
 
@@ -78,10 +82,18 @@ for idx, info in parameters.iterrows():
         for t in range(100):
             BIS.entrain_sediment(100)
 
-        for t in range(10000):
-            dt = BIS.sec_per_a / 100
+        for t in range(100):
+            dt = BIS.sec_per_a / 10000
             BIS.run_one_step(dt, erode = False, advect = False)
-            BIS.time_elapsed += dt
+
+        steps_per_year = 100
+        for t in range(int(n_years * steps_per_year)):
+            dt = BIS.sec_per_a / steps_per_year
+            BIS.run_one_step(dt, erode = False, advect = False)
+
+        BIS.grid.at_node['dispersed_layer_thickness'][:] += (
+            BIS.grid.at_node['dispersed_layer_growth_rate'][:] * (250 - n_years) * BIS.sec_per_a
+        )
 
         fringe_sedflux = (
             BIS.grid.at_node['fringe_thickness'][4] * 
