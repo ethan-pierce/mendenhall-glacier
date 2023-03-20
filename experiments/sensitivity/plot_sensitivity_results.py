@@ -10,6 +10,7 @@ df = pd.read_csv(working_dir + 'outputs/results.csv')
 colors = ['tab:blue', 'tab:orange']
 
 fig, ax = plt.subplots(3, 4, figsize = (32, 16))
+plt.suptitle('Sensitivity experiments')
 
 # ax[0, 0].set_title('Effective pressure')
 ax[0, 0].set_xlabel('$log$ Effective pressure (kPa)')
@@ -156,15 +157,15 @@ ax2.plot(
 plot.scatter(1.0, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
 ax2.scatter(1.0, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
 
-label = '$log$ Coupled grain & pore throat radius ($\mu m$)'
+label = '$log$ Critical depth'
 plot = ax[1, 2]
 plot.set_xlabel(label)
 plot.set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
 plot.tick_params(axis = 'y', colors = colors[0])
 plot.set_xscale('log')
 plot.plot(
-    df[df.variable == 'coupled_grain_size'].value * 1e6,
-    df[df.variable == 'coupled_grain_size'].fringe_sedflux / 1e3,
+    df[df.variable == 'critical_depth'].value,
+    df[df.variable == 'critical_depth'].fringe_sedflux / 1e3,
     color = colors[0]
 )
 
@@ -174,10 +175,12 @@ ax2.tick_params(axis = 'y', colors = colors[1])
 ax2.spines['left'].set_color(colors[0])
 ax2.spines['right'].set_color(colors[1])
 ax2.plot(
-    df[df.variable == 'coupled_grain_size'].value * 1e6,
-    df[df.variable == 'coupled_grain_size'].dispersed_sedflux / 1e3,
+    df[df.variable == 'critical_depth'].value,
+    df[df.variable == 'critical_depth'].dispersed_sedflux / 1e3,
     color = colors[1]
 )
+plot.scatter(10.0, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
+ax2.scatter(10.0, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
 
 label = 'Cluster volume fraction'
 plot = ax[1, 3]

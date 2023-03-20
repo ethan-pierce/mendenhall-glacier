@@ -13,7 +13,7 @@ parameters = pd.read_csv(
 )
 
 n_runs = 20
-n_years = 200
+n_years = 50
 
 results = pd.DataFrame(
     columns = [
@@ -35,8 +35,8 @@ results = pd.DataFrame(
 for idx, info in parameters.iterrows():
     if info.variable == 'default':
         experiments = [0]
-    elif info.variable in ['effective_pressure', 'sliding_velocity_x']:
-        experiments = np.geomspace(info.values[1], info.values[2], n_runs)
+    # elif info.variable in ['effective_pressure', 'sliding_velocity_x']:
+    #     experiments = np.geomspace(info.values[1], info.values[2], n_runs)
     else:
         experiments = np.linspace(info.values[1], info.values[2], n_runs)        
     
@@ -55,10 +55,6 @@ for idx, info in parameters.iterrows():
             BIS.grid.at_node['sliding_velocity_magnitude'][:] = np.abs(
                 np.sqrt(BIS.grid.at_node['sliding_velocity_x'][:]**2 + BIS.grid.at_node['sliding_velocity_y'][:]**2)
             )
-
-        if info.variable == 'coupled_grain_size':
-            BIS.params['pore_throat_radius'] = exp
-            BIS.params['till_grain_radius'] = exp
 
         BIS.set_value('till_thickness', np.full(BIS.grid.number_of_nodes, 20))
         BIS.set_value('fringe_thickness', np.full(BIS.grid.number_of_nodes, 1e-3))
