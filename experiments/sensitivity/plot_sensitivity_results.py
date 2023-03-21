@@ -13,7 +13,7 @@ fig, ax = plt.subplots(3, 4, figsize = (32, 16))
 plt.suptitle('Sensitivity experiments')
 
 # ax[0, 0].set_title('Effective pressure')
-ax[0, 0].set_xlabel('$log$ Effective pressure (kPa)')
+ax[0, 0].set_xlabel('Effective pressure (kPa)')
 ax[0, 0].set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
 ax[0, 0].tick_params(axis = 'y', colors = colors[0])
 ax[0, 0].plot(
@@ -157,7 +157,7 @@ ax2.plot(
 plot.scatter(1.0, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
 ax2.scatter(1.0, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
 
-label = '$log$ Critical depth'
+label = '$log$ Critical depth (m)'
 plot = ax[1, 2]
 plot.set_xlabel(label)
 plot.set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
