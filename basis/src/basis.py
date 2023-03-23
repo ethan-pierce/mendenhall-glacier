@@ -63,7 +63,7 @@ class BasalIceStratigrapher:
                 if len(field.shape) == 3:
                     field = field[0]
 
-                self.grid.add_field(variable, field, at = 'node')
+                self.grid.add_field(variable, np.flip(field, axis = 0), at = 'node')
             
             else:
                 value = np.full(self.grid.shape, info['value'])
@@ -148,13 +148,13 @@ class BasalIceStratigrapher:
                     if (neighbors[0] == -1) & (self.grid.at_node['sliding_velocity_x'][node_id] > 0):
                         self.east_boundary.append(node_id)
                     
-                    if (neighbors[1] == -1) & (self.grid.at_node['sliding_velocity_y'][node_id] < 0):
+                    if (neighbors[1] == -1) & (self.grid.at_node['sliding_velocity_y'][node_id] > 0):
                         self.north_boundary.append(node_id)
                     
                     if (neighbors[2] == -1) & (self.grid.at_node['sliding_velocity_x'][node_id] < 0):
                         self.west_boundary.append(node_id)
                     
-                    if (neighbors[3] == -1) & (self.grid.at_node['sliding_velocity_y'][node_id] > 0):
+                    if (neighbors[3] == -1) & (self.grid.at_node['sliding_velocity_y'][node_id] < 0):
                         self.south_boundary.append(node_id)
 
                     self.grid.at_node['is_terminus'][node_id] = 1

@@ -35,8 +35,10 @@ class AdvectTVD:
         self._parallel_links = self.set_parallel_links_at_link(self._grid)
         self._upwind_links = self.find_upwind_link_at_link(self._grid, self._vel)
 
-        self._grid.add_zeros('flux', at = 'link')
-        self._grid.add_zeros('flux_div', at = 'node')
+        if 'flux' not in self._grid.at_link.keys():
+            self._grid.add_zeros('flux', at = 'link')
+        if 'flux_div' not in self._grid.at_node.keys():
+            self._grid.add_zeros('flux_div', at = 'node')
 
     def set_parallel_links_at_link(self, grid: RasterModelGrid) -> np.ndarray:
         """Map each link to its neighboring links that are parallel and directly adjacent."""

@@ -12,6 +12,7 @@ BIS.initialize(cfg)
 BIS.calc_effective_pressure()
 BIS.calc_shear_stress()
 BIS.calc_erosion_rate()
+BIS.calc_melt_rate()
 
 # Identify terminus nodes
 dx = BIS.grid.dx
