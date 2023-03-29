@@ -113,7 +113,7 @@ class BasalIceStratigrapher:
         """Set the value of a variable on the model grid."""
         self.grid.at_node[var][:] = value
 
-    def identify_terminus(self, bounds = []):
+    def identify_terminus(self, bounds = [], depth = 1):
         """Identify nodes that compose the glacier terminus."""
         self.grid.add_zeros('is_terminus', at = 'node', clobber = True)
 
@@ -138,6 +138,7 @@ class BasalIceStratigrapher:
         self.north_boundary = []
         self.west_boundary = []
         self.south_boundary = []
+        self.adjacent_to_terminus = []
 
         for node_id in range(self.grid.number_of_nodes):
             if is_inbounds(node_id):
@@ -158,6 +159,20 @@ class BasalIceStratigrapher:
                         self.south_boundary.append(node_id)
 
                     self.grid.at_node['is_terminus'][node_id] = 1
+
+                elif depth > 1:
+                    for neighbor in neighbors:
+                        second_neighbors = self.grid.active_adjacent_nodes_at_node[neighbor]
+
+                        if -1 in second_neighbors:
+                            self.adjacent_to_terminus.append(node_id)
+
+                        elif depth > 2:
+                            for second in second_neighbors:
+                                third_neighbors = self.grid.active_adjacent_nodes_at_node[second]
+
+                                if -1 in third_neighbors:
+                                    self.adjacent_to_terminus.append(node_id)
 
 ###################
 # Model processes #
@@ -323,69 +338,31 @@ class BasalIceStratigrapher:
         
     def calc_sediment_flux(self):
         """Calculate the sediment flux from frozen fringe and dispersed ice layers."""
-        fringe_sediment_flux = 0.0
-        dispersed_sediment_flux = 0.0
         
-        for node in range(self.grid.number_of_nodes):
-            if self.grid.at_node['is_terminus'][node] == 1:
+        mask = np.array(
+            [1 if (self.grid.at_node['is_terminus'][node] or node in self.adjacent_to_terminus) 
+             else 0 for node in range(self.grid.number_of_nodes)]
+        )
 
-                if node in self.east_boundary:
-                    fringe_sediment_flux += (
-                        np.abs(self.grid.at_node['sliding_velocity_x'][node]) *
-                        self.grid.at_node['fringe_thickness'][node] * 
-                        (1 - self.params['frozen_fringe_porosity']) *
-                        self.grid.dy
-                    )
-                    dispersed_sediment_flux += (
-                        np.abs(self.grid.at_node['sliding_velocity_x'][node]) *
-                        self.grid.at_node['dispersed_layer_thickness'][node] * 
-                        self.grid.at_node['dispersed_concentration'][node] *
-                        self.grid.dy
-                    )
+        fringe_sediment_flux = (
+            mask *
+            self.grid.at_node['fringe_thickness'] *
+            self.grid.dx *
+            np.abs(self.grid.at_node['sliding_velocity_magnitude']) *
+            self.sec_per_a *
+            (1 - self.params['frozen_fringe_porosity'])
+        )
 
-                if node in self.north_boundary:
-                    fringe_sediment_flux += (
-                        np.abs(self.grid.at_node['sliding_velocity_y'][node]) *
-                        self.grid.at_node['fringe_thickness'][node] * 
-                        (1 - self.params['frozen_fringe_porosity']) *
-                        self.grid.dx
-                    )
-                    dispersed_sediment_flux += (
-                        np.abs(self.grid.at_node['sliding_velocity_y'][node]) *
-                        self.grid.at_node['dispersed_layer_thickness'][node] * 
-                        self.grid.at_node['dispersed_concentration'][node] *
-                        self.grid.dx
-                    )
+        dispersed_sediment_flux = (
+            mask *
+            self.grid.at_node['dispersed_layer_thickness'] *
+            self.grid.dx *
+            np.abs(self.grid.at_node['sliding_velocity_magnitude']) *
+            self.sec_per_a *
+            0.05
+        )
 
-                if node in self.west_boundary:
-                    fringe_sediment_flux += (
-                        np.abs(self.grid.at_node['sliding_velocity_x'][node]) *
-                        self.grid.at_node['fringe_thickness'][node] * 
-                        (1 - self.params['frozen_fringe_porosity']) *
-                        self.grid.dy
-                    )
-                    dispersed_sediment_flux += (
-                        np.abs(self.grid.at_node['sliding_velocity_x'][node]) *
-                        self.grid.at_node['dispersed_layer_thickness'][node] * 
-                        self.grid.at_node['dispersed_concentration'][node] *
-                        self.grid.dy
-                    )
-
-                if node in self.south_boundary:
-                    fringe_sediment_flux += (
-                        np.abs(self.grid.at_node['sliding_velocity_y'][node]) *
-                        self.grid.at_node['fringe_thickness'][node] * 
-                        (1 - self.params['frozen_fringe_porosity']) *
-                        self.grid.dx
-                    )
-                    dispersed_sediment_flux += (
-                        np.abs(self.grid.at_node['sliding_velocity_y'][node]) *
-                        self.grid.at_node['dispersed_layer_thickness'][node] * 
-                        self.grid.at_node['dispersed_concentration'][node] *
-                        self.grid.dx
-                    )
-
-        return (fringe_sediment_flux, dispersed_sediment_flux)
+        return (mask, np.sum(fringe_sediment_flux), np.sum(dispersed_sediment_flux))
 
 ##########
 # Update #
@@ -411,11 +388,12 @@ class BasalIceStratigrapher:
 
         fringe_dH = self.grid.at_node['fringe_growth_rate'] * dt
 
+        # fix some problems that arise with anomalous fringe growth rates
         if clamp > 0:
-            # fix some problems that arise with anomalous fringe growth rates
+            cutoff = np.percentile(fringe_dH, clamp)
             fringe_dH = np.where(
-                fringe_dH > np.percentile(fringe_dH, clamp),
-                np.percentile(fringe_dH, clamp),
+                fringe_dH > cutoff,
+                cutoff,
                 fringe_dH
             )
 

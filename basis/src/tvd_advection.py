@@ -30,15 +30,13 @@ class AdvectTVD:
         else:
             raise ValueError("Velocity field " + str(velocity) + " not found at grid links.")
 
-        self._grid.add_zeros('advection_flux', at = 'link')
-
         self._parallel_links = self.set_parallel_links_at_link(self._grid)
         self._upwind_links = self.find_upwind_link_at_link(self._grid, self._vel)
 
-        if 'flux' not in self._grid.at_link.keys():
-            self._grid.add_zeros('flux', at = 'link')
-        if 'flux_div' not in self._grid.at_node.keys():
-            self._grid.add_zeros('flux_div', at = 'node')
+        if str(field) + '_flux' not in self._grid.at_link.keys():
+            self._grid.add_zeros(str(field) + '_flux', at = 'link')
+        if str(field) + '_flux_div' not in self._grid.at_node.keys():
+            self._grid.add_zeros(str(field) + '_flux_div', at = 'node')
 
     def set_parallel_links_at_link(self, grid: RasterModelGrid) -> np.ndarray:
         """Map each link to its neighboring links that are parallel and directly adjacent."""
@@ -151,16 +149,24 @@ class AdvectTVD:
         
         field_at_links = flux_limiter * high_value_at_links + (1.0 - flux_limiter) * low_value_at_links
         
-        grid.at_link['flux'][grid.active_links] = (
+        grid.at_link[str(field) + '_flux'][grid.active_links] = (
             grid.at_link[velocity][grid.active_links] * field_at_links[grid.active_links]
         )
         
-        grid.at_node['flux_div'][:] = -grid.calc_flux_div_at_node('flux')
+        grid.at_node[str(field) + '_flux_div'][:] = grid.calc_flux_div_at_node(str(field) + '_flux')
 
-        return grid.at_node['flux_div']
+        return grid.at_node[str(field) + '_flux_div']
 
-    def update(self, dt: float):
+    def update(self, dt: float, clamp = 0):
         """Run one forward time step of (dt) seconds."""
         rate_of_change = self.calc_rate_of_change(self._grid, self._field, self._vel, dt)
-        self._grid.at_node[self._field][:] += rate_of_change[:] * dt
+
+        if clamp > 0:
+            rate_of_change[:] = np.where(
+                rate_of_change > np.percentile(rate_of_change, clamp),
+                np.percentile(rate_of_change, clamp),
+                rate_of_change
+            )
+
+        self._grid.at_node[self._field][:] -= rate_of_change[:] * dt
         self.time_elapsed += dt
