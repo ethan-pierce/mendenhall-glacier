@@ -376,7 +376,7 @@ class BasalIceStratigrapher:
 
         self.grid.at_node['till_thickness'][:] += self.grid.at_node['erosion_rate'][:] * dt
 
-    def entrain_sediment(self, dt: float, clamp = 99):
+    def entrain_sediment(self, dt: float, clip = 0):
         """Run one step, only entraining sediment (if available) in basal ice layers."""
         self.calc_thermal_gradients()
         self.calc_fringe_growth_rate()
@@ -389,8 +389,8 @@ class BasalIceStratigrapher:
         fringe_dH = self.grid.at_node['fringe_growth_rate'] * dt
 
         # fix some problems that arise with anomalous fringe growth rates
-        if clamp > 0:
-            cutoff = np.percentile(fringe_dH, clamp)
+        if clip > 0:
+            cutoff = np.percentile(fringe_dH, clip)
             fringe_dH = np.where(
                 fringe_dH > cutoff,
                 cutoff,

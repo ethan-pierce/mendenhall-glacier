@@ -157,16 +157,8 @@ class AdvectTVD:
 
         return grid.at_node[str(field) + '_flux_div']
 
-    def update(self, dt: float, clamp = 0):
+    def update(self, dt: float):
         """Run one forward time step of (dt) seconds."""
         rate_of_change = self.calc_rate_of_change(self._grid, self._field, self._vel, dt)
-
-        if clamp > 0:
-            rate_of_change[:] = np.where(
-                rate_of_change > np.percentile(rate_of_change, clamp),
-                np.percentile(rate_of_change, clamp),
-                rate_of_change
-            )
-
         self._grid.at_node[self._field][:] -= rate_of_change[:] * dt
         self.time_elapsed += dt
