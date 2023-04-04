@@ -24,7 +24,7 @@ for N in [60, 65, 70, 75, 80, 85, 90, 95]:
     ax = np.ravel(axes)[a]
     a += 1
 
-    ax.imshow(np.flip(np.reshape(mask, BIS.grid.shape), axis = 0), cmap = 'Greys_r')
+    ax.imshow(np.flip(np.reshape(mask, BIS.grid.shape), axis = 0), cmap = 'Greys')
 
     field = np.flip(np.reshape(fringe, BIS.grid.shape), axis = 0)
     toplot = np.where(
@@ -33,7 +33,7 @@ for N in [60, 65, 70, 75, 80, 85, 90, 95]:
         np.nan
     )
 
-    im = ax.imshow(toplot, cmap = 'pink', vmin = 0, vmax = 8)
+    im = ax.imshow(toplot, cmap = 'pink_r', vmin = 0, vmax = 8)
     plt.colorbar(im, ax = ax, fraction = 0.0543, pad = 0.04)
 
     ax.set_title('N = ' + str(100 - N) + '% P$_i$')
@@ -55,7 +55,7 @@ for N in [60, 65, 70, 75, 80, 85, 90, 95]:
     ax = np.ravel(axes)[a]
     a += 1
 
-    ax.imshow(np.flip(np.reshape(mask, BIS.grid.shape), axis = 0), cmap = 'Greys_r')
+    ax.imshow(np.flip(np.reshape(mask, BIS.grid.shape), axis = 0), cmap = 'Greys')
 
     field = np.flip(np.reshape(disp, BIS.grid.shape), axis = 0)
     icemask = np.flip(np.reshape(BIS.grid.at_node['ice_thickness'], BIS.grid.shape), axis = 0)
@@ -66,7 +66,7 @@ for N in [60, 65, 70, 75, 80, 85, 90, 95]:
         np.nan
     )
 
-    im = ax.imshow(toplot, cmap = 'pink', vmin = 0, vmax = 4)
+    im = ax.imshow(toplot, cmap = 'pink_r', vmin = 0, vmax = 4)
     plt.colorbar(im, ax = ax, fraction = 0.0543, pad = 0.04)
 
     ax.set_title('N = ' + str(100 - N) + '% P$_i$')
