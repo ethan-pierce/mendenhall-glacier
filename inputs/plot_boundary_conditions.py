@@ -1,5 +1,6 @@
 import numpy as np
 from netCDF4 import Dataset
+from scipy.ndimage import gaussian_filter
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
@@ -12,19 +13,41 @@ fig, ax = plt.subplots(2, 3, figsize = (30, 18))
 
 cmap = 'viridis'
 
-plot0 = geology['usurf'][:]
+mask = np.where(
+    geology['thk'][:] > 0.5,
+    1,
+    0
+)
+
+plot0 = np.where(
+    mask,
+    geology['usurf'][:],
+    np.nan
+)
+ax[0, 0].imshow(mask, cmap = 'Greys')
 im0 = ax[0, 0].imshow(plot0, cmap = cmap)
 ax[0, 0].set_title('Surface elevation (m)')
 plt.colorbar(im0, ax = ax[0, 0], fraction = 0.0543, pad = 0.04)
 
-plot1 = geology['thk'][:]
+plot1 = np.where(
+    mask,
+    geology['thk'][:],
+    np.nan
+)
+ax[0, 1].imshow(mask, cmap = 'Greys')
 im1 = ax[0, 1].imshow(plot1, cmap = cmap)
 ax[0, 1].set_title('Ice thickness (m)')
 plt.colorbar(im1, ax = ax[0, 1], fraction = 0.0543, pad = 0.04)
 
-plot2 = glacier['topg'][0]
+plot2raw = np.sqrt(geology['uvelsurfobs'][:]**2 + geology['vvelsurfobs'][:]**2)
+plot2 = np.where(
+    mask,
+    gaussian_filter(plot2raw, sigma = 2, mode = 'constant'),
+    np.nan
+)
+ax[0, 2].imshow(mask, cmap = 'Greys')
 im2 = ax[0, 2].imshow(plot2, cmap = cmap)
-ax[0, 2].set_title('Bedrock elevation (m)')
+ax[0, 2].set_title('Observed surface velocity (m a$^{-1}$)')
 plt.colorbar(im2, ax = ax[0, 2], fraction = 0.0543, pad = 0.04)
 
 plot3 = np.where(plot1 > 0.5, geology['slidingco'][:], np.nan)
@@ -37,9 +60,9 @@ im4 = ax[1, 1].imshow(plot4, cmap = cmap)
 ax[1, 1].set_title('Sliding velocity (m a$^{-1}$)')
 plt.colorbar(im4, ax = ax[1, 1], fraction = 0.0543, pad = 0.04)
 
-plot5 = np.where(plot1 > 0.5, glacier['velbar_mag'][0], np.nan)
+plot5 = np.where(plot1 > 0.5, np.sqrt(glacier['uvelsurf'][0]**2 + glacier['vvelsurf'][0]**2), np.nan)
 im5 = ax[1, 2].imshow(plot5, cmap = cmap)
-ax[1, 2].set_title('Depth-averaged velocity m a$^{-1}$)')
+ax[1, 2].set_title('Modeled surface velocity m a$^{-1}$)')
 plt.colorbar(im5, ax = ax[1, 2], fraction = 0.0543, pad = 0.04)
 
 xticks = [i for i in range(plot0.shape[1]) if i % 35 == 0]
