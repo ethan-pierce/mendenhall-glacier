@@ -6,16 +6,16 @@ from basis.src.basis import BasalIceStratigrapher
 
 plt.rcParams.update({'font.size': 18})
 
-# BIS = BasalIceStratigrapher()
-# BIS.initialize('./experiments/static-effective-pressure/input_file.toml')
+BIS = BasalIceStratigrapher()
+BIS.initialize('./experiments/static-effective-pressure/input_file.toml')
 
-# mask = np.where(
-#     BIS.grid.at_node['ice_thickness'] > 0.5,
-#     1,
-#     0
-# )
+mask = np.where(
+    BIS.grid.at_node['ice_thickness'] > 0.5,
+    1,
+    0
+)
 
-# fig, axes = plt.subplots(2, 4, figsize = (24, 14))
+# fig, axes = plt.subplots(2, 4, figsize = (26, 14))
 # a = 0
 
 # for N in [60, 80, 90, 95]:
@@ -63,14 +63,14 @@ plt.rcParams.update({'font.size': 18})
 
 # plt.annotate('Frozen fringe thickness (m) at end of simulation', [0.355, 0.475], xycoords = 'figure fraction', fontsize = 22)
 # plt.suptitle('Dispersed layer thickness (m) at end of simulation')
-# plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.3, hspace=0.1)
+# plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.35, hspace=0.1)
 # plt.savefig('./figures/advection_results.png')
 
 # -------------------------------------------------
 
 fig, ax = plt.subplots(1, 2, figsize = (24, 8))
 
-for N in [60, 80, 90, 95]:
+for N in [60, 65, 70, 75, 80, 85, 90, 95]:
     fringe = np.loadtxt('./experiments/static-effective-pressure/outputs/fringe_flux_Pw_' + str(N) + '_pct.txt')
     disp = np.loadtxt('./experiments/static-effective-pressure/outputs/dispersed_flux_Pw_' + str(N) + '_pct.txt')
 
@@ -83,7 +83,7 @@ for N in [60, 80, 90, 95]:
     
 ax[0].set_xlabel('Year of simulation')
 ax[0].set_ylabel('Sediment flux (m$^3$ a$^{-1}$)')
-ax[0].legend(loc = 'center right')
+# ax[0].legend(loc = 'center right')
 ax[0].annotate('Flux from the frozen fringe', [0.2, 0.92], xycoords = 'figure fraction')
 
 ax[1].set_xlabel('Year of simulation')
