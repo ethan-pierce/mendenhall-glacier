@@ -20,8 +20,6 @@ Example usage:
     basis.write_output('my_output_file.nc')
 
 """
-# TODO plot dt at a single point
-# TODO check fringe under icefalls
 
 
 import numpy as np
