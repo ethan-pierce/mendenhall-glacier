@@ -1,22 +1,64 @@
 """Utility to identify centerlines of polygons."""
 import numpy as np
-from scipy.ndimage import label, generate_binary_structure, binary_erosion
+from scipy.ndimage import label, distance_transform_edt, percentile_filter
+from scipy.sparse import csr_matrix
+from scipy.csgraph import dijkstra
 
-def identify_centerline(masked_array: np.ndarray) -> np.ndarray:
-    """Identify the centerline of shapes in a binary array."""
-    centerline = np.zeros_like(np.logical_not(masked_array))
+def identify_centerlines(masked_array, filter_size = 9, percentile = 70, outlet = 'south'):
+    """Given a masked array, identify the centerlines of outlined shapes."""
 
-    labeled_array, n_labels = label(masked_array)
-    structure = generate_binary_structure(2, 1)
+    # Identify pixels that are at or near the centerline
+    distance_array = distance_transform_edt(masked_array.mask)
+    filter = np.ones((filter_size, filter_size))
+    center = distance_array > percentile_filter(distance_array, percentile, footprint=filter)
 
-    for lab in range(1, n_labels + 1):
-        label_mask = labeled_array == lab
-        dilated_mask = np.logical_and(label_mask, np.logical_not(centerline))
-        eroded_mask = np.logical_and(label_mask, centerline)
+    # Identify the largest cohesive grouping of these pixels
+    labeled, n_labels = label(center)
+    sizes = np.bincount(labeled.ravel())[1:]
+    group = np.where(
+        labeled == np.argmax(size) + 1,
+        1,
+        0
+    )
 
-        eroded_mask = binary_erosion(eroded_mask, structure)
+    # Identify the pixel values of the outlet
+    if isinstance(outlet, str):
+        if outlet == 'east':
+            idx = np.argmax(group * np.indices(group.shape)[1])
+        elif outlet == 'north':
+            idx = np.argmin(group * np.indices(group.shape)[0])
+        elif outlet == 'west':
+            idx = np.argmin(group * np.indices(group.shape)[1])
+        elif outlet == 'south':
+            idx = np.argmax(group * np.indices(group.shape)[0])
+        else:
+            raise ValueError('Outlet argument should be east, north, west, or south.')
+        x0 = np.ravel(np.indices(group.shape)[0])[idx]
+        y0 = np.ravel(np.indices(group.shape)[1])[idx]
 
-        centerline[dilated_mask] = True
-        centerline[eroded_mask] = False
+    else:
+        try:
+            x0, y0 = outlet
+        except:
+            raise ValueError('Outlet must either be a string or iterable of length 2.')
 
-    return centerline
+    # Build the adjacency matrix
+    region = np.argwhere(group == 1)
+    num_points = len(region)
+    adjacency_matrix = np.zeros((num_points, num_points), dtype = float)
+
+    for i in range(num_points):
+        for j in range(i + 1, num_points):
+            distance = np.linalg.norm(coords[i] - coords[j])
+
+            adjacency_matrix[i, j] = distance
+            adjacency_matrix[j, i] = distance
+
+    # Calculate distances through the connected region
+    sparse = csr_matrix(adjacency_matrix)
+    distance, _ = dijkstra(sparse, indices = [y0, x0])
+    indices = np.nonzero(group)
+    group_distance = np.zeros_like(group)
+    group_distance[indices] = np.max(distance) - distance
+
+    return group, group_distance
