@@ -1,13 +1,19 @@
 """Plot the centerlines of static experiments."""
 import numpy as np
 import matplotlib.pyplot as plt
+import copy
 from scipy.ndimage import gaussian_filter1d
 from basis.src.basis import BasalIceStratigrapher
 from basis.src.centerlines import identify_centerlines
 
 plt.rcParams.update({'font.size': 18})
 
-for N in [60, 65, 70, 75, 80, 85, 90, 95]:
+Ns = [60, 65, 70, 75, 80, 85, 90, 95]
+bins = np.arange(5, 350, 0.1)
+
+results = {N: {'fvals': None, 'dvals': None} for N in Ns}
+
+for N in Ns:
     fringe = np.loadtxt('./experiments/static-effective-pressure/outputs/fringe_Pw_' + str(N) + '_pct.txt')
     disp = np.loadtxt('./experiments/static-effective-pressure/outputs/dispersed_Pw_' + str(N) + '_pct.txt')
 
@@ -27,7 +33,6 @@ for N in [60, 65, 70, 75, 80, 85, 90, 95]:
     fringe_masked = np.where(fdist > 0, fringe, 0)
     disp_masked = np.where(ddist > 0, disp, 0)
 
-    bins = np.arange(5, 350, 0.1)
     fvals = np.zeros_like(bins)
     dvals = np.zeros_like(bins)
 
@@ -52,6 +57,9 @@ for N in [60, 65, 70, 75, 80, 85, 90, 95]:
         else:
             dvals[i] = 0
 
+    results[N]['fvals'] = copy.deepcopy(fvals)
+    results[N]['dvals'] = copy.deepcopy(dvals)
+
     fig, ax = plt.subplots(figsize = (18, 6))
 
     mask = (fvals != 0) & (dvals != 0)
@@ -65,3 +73,4 @@ for N in [60, 65, 70, 75, 80, 85, 90, 95]:
     plt.title('Effective pressure = ' + str(100-N) + '% overburden')
    
     plt.savefig('./experiments/static-effective-pressure/outputs/centerlines/centerline_' + str(N) +'.png')
+
