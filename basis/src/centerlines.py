@@ -2,7 +2,7 @@
 import numpy as np
 from scipy.ndimage import label, distance_transform_edt, percentile_filter
 from scipy.sparse import csr_matrix
-from scipy.csgraph import dijkstra
+from scipy.sparse.csgraph import dijkstra
 
 def identify_centerlines(masked_array, filter_size = 9, percentile = 70, outlet = 'south'):
     """Given a masked array, identify the centerlines of outlined shapes."""
@@ -16,7 +16,7 @@ def identify_centerlines(masked_array, filter_size = 9, percentile = 70, outlet 
     labeled, n_labels = label(center)
     sizes = np.bincount(labeled.ravel())[1:]
     group = np.where(
-        labeled == np.argmax(size) + 1,
+        labeled == np.argmax(sizes) + 1,
         1,
         0
     )
@@ -49,7 +49,7 @@ def identify_centerlines(masked_array, filter_size = 9, percentile = 70, outlet 
 
     for i in range(num_points):
         for j in range(i + 1, num_points):
-            distance = np.linalg.norm(coords[i] - coords[j])
+            distance = np.linalg.norm(region[i] - region[j])
 
             adjacency_matrix[i, j] = distance
             adjacency_matrix[j, i] = distance
