@@ -57,7 +57,8 @@ fplot = ax.boxplot(
         facecolor = 'lightblue'
     ),
     medianprops = dict(
-        color = 'darkblue'
+        color = 'royalblue',
+        linewidth = 2
     )
 )
 
@@ -71,7 +72,8 @@ dplot = ax.boxplot(
         facecolor = 'navajowhite'
     ),
     medianprops = dict(
-        color = 'orange'
+        color = 'orange',
+        linewidth = 2
     )
 )
 
@@ -85,7 +87,7 @@ ax.set_xlabel('Effective pressure scenario (% of overburden)')
 ax.set_ylabel('Layer thickness (m)')
 plt.title('Modeled layer thicknesses at the terminus')
 
-legend_elements = [plt.Rectangle((0, 0), 1, 1, facecolor='lightblue', edgecolor='darkblue', label='Frozen fringe'),
+legend_elements = [plt.Rectangle((0, 0), 1, 1, facecolor='lightblue', edgecolor='royalblue', label='Frozen fringe'),
                    plt.Rectangle((0, 0), 1, 1, facecolor='navajowhite', edgecolor='orange', label='Dispersed layer')]
 ax.legend(handles=legend_elements, loc='upper right')
 
@@ -98,11 +100,13 @@ plt.close('all')
 fig, ax = plt.subplots(figsize = (12, 6))
 ax2 = ax.twinx()
 
-fplot = ax.plot(Ns, ffluxes, color = 'cornflowerblue', label = 'Frozen fringe')
+blue = 'royalblue'
+
+fplot = ax.plot(Ns, ffluxes, color = blue, label = 'Frozen fringe')
 dplot = ax2.plot(Ns, dfluxes, color = 'orange', label = 'Dispersed layer')
 sumplot = ax.plot(
     Ns, np.array(ffluxes) + np.array(dfluxes), 
-    color = 'cornflowerblue', label = 'Sum of layers',
+    color = blue, label = 'Sum of layers',
     linestyle = ':', linewidth = 2.5
 )
 
@@ -115,8 +119,8 @@ ax2.set_ylabel('Sediment flux (m$^3$ a$^{-1}$)')
 ax.set_ylim([0, 56000])
 ax2.set_ylim([1000, 4500])
 
-ax2.spines['left'].set_color('cornflowerblue')
-ax.tick_params(axis='y', colors='royalblue')
+ax2.spines['left'].set_color(blue)
+ax.tick_params(axis='y', colors=blue)
 ax2.spines['right'].set_color('orange')
 ax2.tick_params(axis='y', colors='orange')
 
