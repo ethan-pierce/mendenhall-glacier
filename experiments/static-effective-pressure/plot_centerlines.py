@@ -64,12 +64,14 @@ for N in Ns:
 
     mask = (fvals != 0) & (dvals != 0)
 
-    ax.plot(bins[mask] * 50 / 1e3, gaussian_filter1d(fvals[mask], sigma = 1), label = 'Frozen fringe layer')
-    ax.plot(bins[mask] * 50 / 1e3, gaussian_filter1d(dvals[mask] + fvals[mask], sigma = 1), label = 'Dispersed layer')
+    frg = ax.plot(bins[mask] * 50 / 1e3, gaussian_filter1d(fvals[mask], sigma = 1), label = 'Frozen fringe layer')
+    dsp = ax.plot(bins[mask] * 50 / 1e3, gaussian_filter1d(dvals[mask] + fvals[mask], sigma = 1), label = 'Dispersed layer')
 
     ax.set_ylim([0, 11])
 
-    plt.legend(loc = 'upper left')
+    handles, labels = ax.get_legend_handles_labels()
+    plt.legend(handles[::-1], labels[::-1], loc = 'upper left')
+
     plt.xlabel('Distance from terminus (km)')
     plt.ylabel('Height in the ice column (m)')
     plt.title('Effective pressure = ' + str(100-N) + '% overburden')
