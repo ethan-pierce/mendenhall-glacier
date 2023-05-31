@@ -67,6 +67,8 @@ for N in Ns:
     ax.plot(bins[mask] * 50 / 1e3, gaussian_filter1d(fvals[mask], sigma = 1), label = 'Frozen fringe layer')
     ax.plot(bins[mask] * 50 / 1e3, gaussian_filter1d(dvals[mask] + fvals[mask], sigma = 1), label = 'Dispersed layer')
 
+    ax.set_ylim([0, 11])
+
     plt.legend(loc = 'upper left')
     plt.xlabel('Distance from terminus (km)')
     plt.ylabel('Height in the ice column (m)')

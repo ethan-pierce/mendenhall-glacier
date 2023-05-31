@@ -7,9 +7,6 @@ plt.rcParams.update({'font.size': 24})
 working_dir = './experiments/sensitivity/'
 df = pd.read_csv(working_dir + 'outputs/results.csv')
 
-colors = ['tab:blue', 'tab:orange']
-
-
 vars_list = [
     'effective_pressure',
     'sliding_velocity_x',
@@ -86,16 +83,18 @@ for var in vars_list:
 
 width = 0.6
 xs = np.arange(len(vars_list))
-colors = ['tab:blue', 'tab:orange']
+colors = ['cornflowerblue', 'navajowhite']
 
 fig, ax = plt.subplots(2, 1, figsize=(22, 24))
 
 fidx = np.flip(np.argsort(fbars))
-fringe_bars = ax[0].bar(xs, np.array(fbars)[fidx], width, label='Frozen fringe sensitivity', color=colors[0])
+fringe_bars = ax[0].bar(xs, np.array(fbars)[fidx], width, label='Frozen fringe sensitivity', 
+                        color=colors[0], edgecolor = 'darkblue', linewidth = 2)
 ax[0].bar_label(fringe_bars, fmt='%.2f', padding=3, fontsize = 28)
 
 didx= np.flip(np.argsort(dbars))
-disp_bars = ax[1].bar(xs, np.array(dbars)[didx], width, label='Dispersed layer sensitivity', color=colors[1])
+disp_bars = ax[1].bar(xs, np.array(dbars)[didx], width, label='Dispersed layer sensitivity', 
+                      color=colors[1], edgecolor = 'orange', linewidth = 2)
 ax[1].bar_label(disp_bars, fmt='%.2f', padding=3, fontsize = 28)
 
 ax[0].axhline(0, color = 'k', linestyle = ':')
@@ -106,6 +105,12 @@ ax[0].set_xticklabels(np.array(list(names.values()))[fidx], rotation=45, ha='rig
 
 ax[1].set_xticks(xs)
 ax[1].set_xticklabels(np.array(list(names.values()))[didx], rotation=45, ha='right', fontsize = 28)
+
+ax[0].yaxis.grid(True, which = 'both', linestyle = ':', linewidth = 0.5, alpha = 0.7, color = 'gray')
+ax[1].yaxis.grid(True, which = 'both', linestyle = ':', linewidth = 0.5, alpha = 0.7, color = 'gray')
+
+ax[0].set_ylim([-50, 100])
+ax[1].set_ylim([-13, 11])
 
 ax[0].set_ylabel('Sediment flux (kg m$^{-1}$ a$^{-1}$)', fontsize = 30)
 ax[1].set_ylabel('Sediment flux (kg m$^{-1}$ a$^{-1}$)', fontsize = 30)
@@ -120,4 +125,4 @@ for axis in ax:
 plt.suptitle('Sensitivity Magnitude', fontsize = 40)
 plt.subplots_adjust(top = 0.9)
 plt.tight_layout()
-plt.savefig(working_dir + '/outputs/sensitivity_magnitude.png')
+plt.savefig(working_dir + '/outputs/sensitivity_magnitude.png', dpi = 300)

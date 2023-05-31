@@ -1,308 +1,134 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 
-plt.rcParams.update({'font.size': 18})
+plt.rcParams.update({'font.size': 22})
 
 working_dir = './experiments/sensitivity/'
 df = pd.read_csv(working_dir + 'outputs/results.csv')
 
+vars_list = [
+    'effective_pressure',
+    'sliding_velocity_x',
+    'basal_shear_stress',
+    'geothermal_heat_flux',
+    'till_grain_radius',
+    'pore_throat_radius',
+    'critical_depth',
+    'cluster_volume_fraction',
+    'friction_angle',
+    'sediment_thermal_conductivity',
+    'frozen_fringe_porosity',
+    'permeability'
+]
+defaults = {
+    'effective_pressure': 100,
+    'sliding_velocity_x': 50,
+    'basal_shear_stress': 56.3,
+    'geothermal_heat_flux': 0.06,
+    'till_grain_radius': 40,
+    'pore_throat_radius': 1,
+    'critical_depth': 10.0,
+    'cluster_volume_fraction': 0.64,
+    'friction_angle': 32,
+    'sediment_thermal_conductivity': 6.27,
+    'frozen_fringe_porosity': 0.4,
+    'permeability': 4.1e-17
+}
+scalars = {
+    'effective_pressure': 1e-3,
+    'sliding_velocity_x': 1,
+    'basal_shear_stress': 1e-3,
+    'geothermal_heat_flux': 1,
+    'till_grain_radius': 1e6,
+    'pore_throat_radius': 1e6,
+    'critical_depth': 1,
+    'cluster_volume_fraction': 1,
+    'friction_angle': 1,
+    'sediment_thermal_conductivity': 1,
+    'frozen_fringe_porosity': 1,
+    'permeability': 1
+}
+names = {
+    'effective_pressure': 'Effective pressure',
+    'sliding_velocity_x': 'Sliding velocity',
+    'basal_shear_stress': 'Basal shear stress',
+    'geothermal_heat_flux': 'Geothermal heat flux',
+    'till_grain_radius': 'Till grain radius',
+    'pore_throat_radius': 'Pore throat radius',
+    'critical_depth': 'Critical depth',
+    'cluster_volume_fraction': 'Cluster volume fraction',
+    'friction_angle': 'Till friction angle',
+    'sediment_thermal_conductivity': 'Thermal conductivity',
+    'frozen_fringe_porosity': 'Fringe porosity',
+    'permeability': 'Fringe permeability'
+}
+units = {
+    'effective_pressure': '(kPa)',
+    'sliding_velocity_x': '(m a$^{-1}$)',
+    'basal_shear_stress': '(kPa)',
+    'geothermal_heat_flux': '(W m$^{-2}$)',
+    'till_grain_radius': '($\mu$m)',
+    'pore_throat_radius': '($\mu$m)',
+    'critical_depth': '(m)',
+    'cluster_volume_fraction': '',
+    'friction_angle': '(degrees)',
+    'sediment_thermal_conductivity': '(W m$^{-1}$ K$^{-1}$)',
+    'frozen_fringe_porosity': '',
+    'permeability': '(m$^2$)'
+}
+logs = ['sliding_velocity_x', 'till_grain_radius', 'pore_throat_radius']
+
 colors = ['tab:blue', 'tab:orange']
 
 fig, ax = plt.subplots(3, 4, figsize = (32, 16))
-plt.suptitle('Sensitivity experiments')
+plt.suptitle('Sensitivity experiments', fontsize = 36)
 
-# ax[0, 0].set_title('Effective pressure')
-ax[0, 0].set_xlabel('Effective pressure (kPa)')
-ax[0, 0].set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
-ax[0, 0].tick_params(axis = 'y', colors = colors[0])
-ax[0, 0].plot(
-    df[df.variable == 'effective_pressure'].value / 1e3,
-    df[df.variable == 'effective_pressure'].fringe_sedflux / 1e3,
-    color = colors[0]
-)
+for i in range(len(vars_list)):
+    var = vars_list[i]
+    default = defaults[var]
+    scalar = scalars[var]
+    name = names[var]
+    unit = units[var]
 
-ax2 = ax[0, 0].twinx()
-ax2.set_ylabel('Dispersed sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[1])
-ax2.tick_params(axis = 'y', colors = colors[1])
-ax2.spines['left'].set_color(colors[0])
-ax2.spines['right'].set_color(colors[1])
-ax2.plot(
-    df[df.variable == 'effective_pressure'].value / 1e3,
-    df[df.variable == 'effective_pressure'].dispersed_sedflux / 1e3,
-    color = colors[1]
-)
-ax[0, 0].scatter(100, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
-ax2.scatter(100, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
+    axis = np.ravel(ax)[i]
+    axis2 = axis.twinx()
 
-# ax[0, 0].set_title('Sliding velocity (m a$^{-1}$)')
-ax[0, 1].set_xlabel('$log$ Sliding velocity (m a$^{-1}$)')
-ax[0, 1].set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
-ax[0, 1].tick_params(axis = 'y', colors = colors[0])
-ax[0, 1].set_xscale('log')
-ax[0, 1].plot(
-    df[df.variable == 'sliding_velocity_x'].value,
-    df[df.variable == 'sliding_velocity_x'].fringe_sedflux / 1e3,
-    color = colors[0]
-)
+    axis.set_title(name)
+    axis.set_xlabel(name + ' ' + unit)
+    axis.set_ylabel('Fringe flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0], fontsize = 22)
+    axis2.set_ylabel('Dispersed flux (kg m$^{-1}$ a$^{-1}$)', color = colors[1], fontsize = 22)
 
-ax2 = ax[0, 1].twinx()
-ax2.set_ylabel('Dispersed sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[1])
-ax2.tick_params(axis = 'y', colors = colors[1])
-ax2.spines['left'].set_color(colors[0])
-ax2.spines['right'].set_color(colors[1])
-ax2.plot(
-    df[df.variable == 'sliding_velocity_x'].value,
-    df[df.variable == 'sliding_velocity_x'].dispersed_sedflux / 1e3,
-    color = colors[1]
-)
-ax[0, 1].scatter(50, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
-ax2.scatter(50, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
+    axis.tick_params(axis = 'y', colors = colors[0])
+    axis2.tick_params(axis = 'y', colors = colors[1])
+    axis2.spines['left'].set_color(colors[0])
+    axis2.spines['right'].set_color(colors[1])
 
-# ax[0, 0].set_title('Basal shear stress (kPa)')
-ax[0, 2].set_xlabel('Basal shear stress (kPa)')
-ax[0, 2].set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
-ax[0, 2].tick_params(axis = 'y', colors = colors[0])
-ax[0, 2].plot(
-    df[df.variable == 'basal_shear_stress'].value / 1e3,
-    df[df.variable == 'basal_shear_stress'].fringe_sedflux / 1e3,
-    color = colors[0]
-)
+    axis.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+    axis2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
 
-ax2 = ax[0, 2].twinx()
-ax2.set_ylabel('Dispersed sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[1])
-ax2.tick_params(axis = 'y', colors = colors[1])
-ax2.spines['left'].set_color(colors[0])
-ax2.spines['right'].set_color(colors[1])
-ax2.plot(
-    df[df.variable == 'basal_shear_stress'].value / 1e3,
-    df[df.variable == 'basal_shear_stress'].dispersed_sedflux / 1e3,
-    color = colors[1]
-)
-ax[0, 2].scatter(56.3, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
-ax2.scatter(56.3, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
+    if var in logs:
+        axis.set_xscale('log')
+        axis2.set_xscale('log')
 
-# ax[0, 0].set_title('Geothermal heat flux (W m${-2}$)')
-ax[0, 3].set_xlabel('Geothermal heat flux (W m${-2}$)')
-ax[0, 3].set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
-ax[0, 3].tick_params(axis = 'y', colors = colors[0])
-ax[0, 3].plot(
-    df[df.variable == 'geothermal_heat_flux'].value,
-    df[df.variable == 'geothermal_heat_flux'].fringe_sedflux / 1e3,
-    color = colors[0]
-)
+    if var == 'permeability':
+        axis.xaxis.set_label_coords(0.35, -0.125)
 
-ax2 = ax[0, 3].twinx()
-ax2.set_ylabel('Dispersed sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[1])
-ax2.tick_params(axis = 'y', colors = colors[1])
-ax2.spines['left'].set_color(colors[0])
-ax2.spines['right'].set_color(colors[1])
-ax2.plot(
-    df[df.variable == 'geothermal_heat_flux'].value,
-    df[df.variable == 'geothermal_heat_flux'].dispersed_sedflux / 1e3,
-    color = colors[1]
-)
-ax[0, 3].scatter(0.06, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
-ax2.scatter(0.06, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
+    axis.plot(
+        df[df.variable == var].value * scalar,
+        df[df.variable == var].fringe_sedflux * 1e-3,
+        color = colors[0]
+    )
+    axis.scatter(default, df[df.variable == 'default'].fringe_sedflux * 1e-3, color = colors[0], s = 50)
 
-label = '$log$ Till grain radius ($\mu m$)'
-plot = ax[1, 0]
-plot.set_xlabel(label)
-plot.set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
-plot.tick_params(axis = 'y', colors = colors[0])
-plot.set_xscale('log')
-plot.plot(
-    df[df.variable == 'till_grain_radius'].value * 1e6,
-    df[df.variable == 'till_grain_radius'].fringe_sedflux / 1e3,
-    color = colors[0]
-)
+    axis2.plot(
+        df[df.variable == var].value * scalar,
+        df[df.variable == var].dispersed_sedflux * 1e-3,
+        color = colors[1]
+    )
+    axis2.scatter(default, df[df.variable == 'default'].dispersed_sedflux * 1e-3, color = colors[1], s = 50)
 
-ax2 = plot.twinx()
-ax2.set_ylabel('Dispersed sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[1])
-ax2.tick_params(axis = 'y', colors = colors[1])
-ax2.spines['left'].set_color(colors[0])
-ax2.spines['right'].set_color(colors[1])
-ax2.plot(
-    df[df.variable == 'till_grain_radius'].value * 1e6,
-    df[df.variable == 'till_grain_radius'].dispersed_sedflux / 1e3,
-    color = colors[1],
-    linestyle = ':',
-    lw = 3
-)
-plot.scatter(4e-5 * 1e6, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
-ax2.scatter(4e-5 * 1e6, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
-
-label = '$log$ Pore throat radius ($\mu m$)'
-plot = ax[1, 1]
-plot.set_xlabel(label)
-plot.set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
-plot.tick_params(axis = 'y', colors = colors[0])
-plot.set_xscale('log')
-plot.plot(
-    df[df.variable == 'pore_throat_radius'].value * 1e6,
-    df[df.variable == 'pore_throat_radius'].fringe_sedflux / 1e3,
-    color = colors[0]
-)
-
-ax2 = plot.twinx()
-ax2.set_ylabel('Dispersed sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[1])
-ax2.tick_params(axis = 'y', colors = colors[1])
-ax2.spines['left'].set_color(colors[0])
-ax2.spines['right'].set_color(colors[1])
-ax2.plot(
-    df[df.variable == 'pore_throat_radius'].value * 1e6,
-    df[df.variable == 'pore_throat_radius'].dispersed_sedflux / 1e3,
-    color = colors[1]
-)
-plot.scatter(1.0, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
-ax2.scatter(1.0, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
-
-label = '$log$ Critical depth (m)'
-plot = ax[1, 2]
-plot.set_xlabel(label)
-plot.set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
-plot.tick_params(axis = 'y', colors = colors[0])
-plot.set_xscale('log')
-plot.plot(
-    df[df.variable == 'critical_depth'].value,
-    df[df.variable == 'critical_depth'].fringe_sedflux / 1e3,
-    color = colors[0]
-)
-
-ax2 = plot.twinx()
-ax2.set_ylabel('Dispersed sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[1])
-ax2.tick_params(axis = 'y', colors = colors[1])
-ax2.spines['left'].set_color(colors[0])
-ax2.spines['right'].set_color(colors[1])
-ax2.plot(
-    df[df.variable == 'critical_depth'].value,
-    df[df.variable == 'critical_depth'].dispersed_sedflux / 1e3,
-    color = colors[1]
-)
-plot.scatter(10.0, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
-ax2.scatter(10.0, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
-
-label = 'Cluster volume fraction'
-plot = ax[1, 3]
-plot.set_xlabel(label)
-plot.set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
-plot.tick_params(axis = 'y', colors = colors[0])
-plot.plot(
-    df[df.variable == 'cluster_volume_fraction'].value,
-    df[df.variable == 'cluster_volume_fraction'].fringe_sedflux / 1e3,
-    color = colors[0]
-)
-
-ax2 = plot.twinx()
-ax2.set_ylabel('Dispersed sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[1])
-ax2.tick_params(axis = 'y', colors = colors[1])
-ax2.spines['left'].set_color(colors[0])
-ax2.spines['right'].set_color(colors[1])
-ax2.plot(
-    df[df.variable == 'cluster_volume_fraction'].value,
-    df[df.variable == 'cluster_volume_fraction'].dispersed_sedflux / 1e3,
-    color = colors[1]
-)
-plot.scatter(0.64, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
-ax2.scatter(0.64, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
-
-label = 'Till friction angle (degrees)'
-plot = ax[2, 0]
-plot.set_xlabel(label)
-plot.set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
-plot.tick_params(axis = 'y', colors = colors[0])
-plot.plot(
-    df[df.variable == 'friction_angle'].value,
-    df[df.variable == 'friction_angle'].fringe_sedflux / 1e3,
-    color = colors[0]
-)
-
-ax2 = plot.twinx()
-ax2.set_ylabel('Dispersed sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[1])
-ax2.tick_params(axis = 'y', colors = colors[1])
-ax2.spines['left'].set_color(colors[0])
-ax2.spines['right'].set_color(colors[1])
-ax2.plot(
-    df[df.variable == 'friction_angle'].value,
-    df[df.variable == 'friction_angle'].dispersed_sedflux / 1e3,
-    color = colors[1]
-)
-plot.scatter(32, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
-ax2.scatter(32, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
-
-label = 'Sediment thermal conductivity (W $(mK)^{-1}$)'
-plot = ax[2, 1]
-plot.set_xlabel(label)
-plot.set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
-plot.tick_params(axis = 'y', colors = colors[0])
-plot.plot(
-    df[df.variable == 'sediment_thermal_conductivity'].value,
-    df[df.variable == 'sediment_thermal_conductivity'].fringe_sedflux / 1e3,
-    color = colors[0]
-)
-
-ax2 = plot.twinx()
-ax2.set_ylabel('Dispersed sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[1])
-ax2.tick_params(axis = 'y', colors = colors[1])
-ax2.spines['left'].set_color(colors[0])
-ax2.spines['right'].set_color(colors[1])
-ax2.plot(
-    df[df.variable == 'sediment_thermal_conductivity'].value,
-    df[df.variable == 'sediment_thermal_conductivity'].dispersed_sedflux / 1e3,
-    color = colors[1]
-)
-plot.scatter(6.27, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
-ax2.scatter(6.27, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
-
-label = 'Frozen fringe porosity'
-plot = ax[2, 2]
-plot.set_xlabel(label)
-plot.set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
-plot.tick_params(axis = 'y', colors = colors[0])
-plot.plot(
-    df[df.variable == 'frozen_fringe_porosity'].value,
-    df[df.variable == 'frozen_fringe_porosity'].fringe_sedflux / 1e3,
-    color = colors[0]
-)
-
-ax2 = plot.twinx()
-ax2.set_ylabel('Dispersed sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[1])
-ax2.tick_params(axis = 'y', colors = colors[1])
-ax2.spines['left'].set_color(colors[0])
-ax2.spines['right'].set_color(colors[1])
-ax2.plot(
-    df[df.variable == 'frozen_fringe_porosity'].value,
-    df[df.variable == 'frozen_fringe_porosity'].dispersed_sedflux / 1e3,
-    color = colors[1]
-)
-plot.scatter(0.4, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
-ax2.scatter(0.4, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
-
-label = 'Till permeability (m$^2$)'
-plot = ax[2, 3]
-plot.set_xlabel(label)
-plot.set_ylabel('Fringe sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[0])
-plot.tick_params(axis = 'y', colors = colors[0])
-plot.plot(
-    df[df.variable == 'permeability'].value,
-    df[df.variable == 'permeability'].fringe_sedflux / 1e3,
-    color = colors[0]
-)
-
-ax2 = plot.twinx()
-ax2.set_ylabel('Dispersed sed. flux (kg m$^{-1}$ a$^{-1}$)', color = colors[1])
-ax2.tick_params(axis = 'y', colors = colors[1])
-ax2.spines['left'].set_color(colors[0])
-ax2.spines['right'].set_color(colors[1])
-ax2.plot(
-    df[df.variable == 'permeability'].value,
-    df[df.variable == 'permeability'].dispersed_sedflux / 1e3,
-    color = colors[1],
-    linestyle = ':',
-    lw = 3
-)
-plot.scatter(4.1e-17, df[df.variable == 'default'].fringe_sedflux / 1e3, color = colors[0], s = 50)
-ax2.scatter(4.1e-17, df[df.variable == 'default'].dispersed_sedflux / 1e3, color = colors[1], s = 50)
-
-plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.5, hspace=0.3)
+plt.tight_layout()
+# plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.5, hspace=0.3)
 plt.savefig(working_dir + '/outputs/sensitivity.png')
