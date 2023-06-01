@@ -11,8 +11,6 @@ glacier = Dataset('./inputs/igm-results/ex.nc')
 
 fig, ax = plt.subplots(2, 3, figsize = (30, 18))
 
-cmap = 'viridis'
-
 mask = np.where(
     geology['thk'][:] > 0.5,
     1,
