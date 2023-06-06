@@ -28,7 +28,6 @@ for N in Ns:
     dy = BIS.grid.dy
     bounds = [50 * dx, 100 * dx, 0 * dy, 15 * dy]
     BIS.identify_terminus(bounds, depth = 2)
-
     terminus = BIS.east_boundary + BIS.north_boundary + BIS.west_boundary + BIS.south_boundary + BIS.adjacent_to_terminus
 
     fboxes.append(BIS.grid.at_node['fringe_thickness'][terminus])
@@ -37,12 +36,29 @@ for N in Ns:
     # fflux = np.loadtxt('./experiments/static-effective-pressure/outputs/fringe_flux_Pw_' + str(N) + '_pct.txt')
     # dflux = np.loadtxt('./experiments/static-effective-pressure/outputs/dispersed_flux_Pw_' + str(N) + '_pct.txt')
 
-    _, fflux, dflux = BIS.calc_sediment_flux()
+    BIS.identify_terminus(bounds, depth = 3)
+    terminus = BIS.east_boundary + BIS.north_boundary + BIS.west_boundary + BIS.south_boundary + BIS.adjacent_to_terminus
+
+    fflux = np.sum(
+        BIS.grid.at_node['fringe_thickness'][terminus]
+        * BIS.grid.dx
+        * BIS.grid.at_node['sliding_velocity_magnitude'][terminus]
+        * 0.6
+        * BIS.sec_per_a
+    )
+
+    dflux = np.sum(
+        BIS.grid.at_node['dispersed_layer_thickness'][terminus]
+        * BIS.grid.dx 
+        * BIS.grid.at_node['sliding_velocity_magnitude'][terminus]
+        * 0.05
+        * BIS.sec_per_a
+    )
 
     ffluxes.append(fflux)
     dfluxes.append(dflux)
 
-
+print(np.array(ffluxes) + np.array(dfluxes))
 
 # # Boxplot
 fig, ax = plt.subplots(figsize = (12, 6))
@@ -116,8 +132,8 @@ ax.set_xlabel('Effective pressure scenario (% of overburden)')
 ax.set_ylabel('Sediment flux (m$^3$ a$^{-1}$)')
 ax2.set_ylabel('Sediment flux (m$^3$ a$^{-1}$)')
 
-ax.set_ylim([0, 56000])
-ax2.set_ylim([1000, 4500])
+# ax.set_ylim([0, 56000])
+ax2.set_ylim([5500, 15000])
 
 ax2.spines['left'].set_color(blue)
 ax.tick_params(axis='y', colors=blue)
