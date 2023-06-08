@@ -27,12 +27,6 @@ titles = [
     'Modeled (y) sliding velocity (m a$^{-1}$)'
 ]
 
-minmax = [
-    [0, 550],
-    [-400, 200],
-    [-200, 250]
-]
-
 mask = geology['icemask'][:]
 
 fig, ax = plt.subplots(2, 3, figsize = (20, 12))
@@ -44,16 +38,29 @@ for i in range(len(np.ravel(ax))):
         fields[i],
         np.nan
     )
-    if i < 3:
-        mn, mx = minmax[i]
-    else:
-        mn, mx = minmax[i - 3]
+    
+    mn = np.nanmin(plot)
+    mx = np.nanmax(plot)
 
-    axis.imshow(mask + 0.75, cmap = 'Greys_r', vmin = 0, vmax = 1)
-    im = axis.imshow(plot, cmap = 'viridis', vmin = mn, vmax = mx)
+    axis.imshow(mask + 0.65, cmap = 'Greys_r', vmin = 0, vmax = 1)
+
+    if i in [0, 3]:
+        cmap = 'Blues_r'
+        im = axis.imshow(plot, cmap = cmap)
+    else:
+        divnorm = TwoSlopeNorm(vmin = mn, vcenter = 0, vmax = mx)
+        cmap = 'RdBu_r'
+        im = axis.imshow(plot, cmap = cmap, norm = divnorm)
     
     axis.set_title(titles[i], y = 1.05)
-    plt.colorbar(im, ax = axis, fraction = 0.0543, pad = 0.04)
+    
+    if i in [0, 3]:
+        cbar_ticks = [0, 0.25 * mx, 0.5 * mx, 0.75 * mx, mx]
+    else:
+        cbar_ticks = [mn, 0.66 * mn, 0.33 * mn, 0, 0.33 * mx, 0.66 * mx, mx]
+
+    cbar = plt.colorbar(im, ax = axis, fraction = 0.0543, pad = 0.04, ticks = cbar_ticks)
+    cbar.ax.set_yticklabels([str(int(5 * round(i / 5))) for i in cbar_ticks])
 
     if i in [3, 4, 5]:
         axis.set_xlabel('Grid x')
