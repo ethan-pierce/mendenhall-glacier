@@ -28,29 +28,27 @@ for N in Ns:
     dy = BIS.grid.dy
     bounds = [50 * dx, 100 * dx, 0 * dy, 15 * dy]
     BIS.identify_terminus(bounds, depth = 2)
-    terminus = BIS.east_boundary + BIS.north_boundary + BIS.west_boundary + BIS.south_boundary + BIS.adjacent_to_terminus
+    depth1 = BIS.east_boundary + BIS.north_boundary + BIS.west_boundary + BIS.south_boundary
+    depth2 = BIS.adjacent_to_terminus
 
-    fboxes.append(BIS.grid.at_node['fringe_thickness'][terminus])
-    dboxes.append(BIS.grid.at_node['dispersed_layer_thickness'][terminus])
+    fboxes.append(BIS.grid.at_node['fringe_thickness'][depth2])
+    dboxes.append(BIS.grid.at_node['dispersed_layer_thickness'][depth2])
 
     # fflux = np.loadtxt('./experiments/static-effective-pressure/outputs/fringe_flux_Pw_' + str(N) + '_pct.txt')
     # dflux = np.loadtxt('./experiments/static-effective-pressure/outputs/dispersed_flux_Pw_' + str(N) + '_pct.txt')
 
-    BIS.identify_terminus(bounds, depth = 3)
-    terminus = BIS.east_boundary + BIS.north_boundary + BIS.west_boundary + BIS.south_boundary + BIS.adjacent_to_terminus
-
     fflux = np.sum(
-        BIS.grid.at_node['fringe_thickness'][terminus]
+        BIS.grid.at_node['fringe_thickness'][depth2]
         * BIS.grid.dx
-        * BIS.grid.at_node['sliding_velocity_magnitude'][terminus]
+        * BIS.grid.at_node['sliding_velocity_magnitude'][depth2]
         * 0.6
         * BIS.sec_per_a
     )
 
     dflux = np.sum(
-        BIS.grid.at_node['dispersed_layer_thickness'][terminus]
+        BIS.grid.at_node['dispersed_layer_thickness'][depth2]
         * BIS.grid.dx 
-        * BIS.grid.at_node['sliding_velocity_magnitude'][terminus]
+        * BIS.grid.at_node['sliding_velocity_magnitude'][depth2]
         * 0.05
         * BIS.sec_per_a
     )
@@ -133,7 +131,7 @@ ax.set_ylabel('Sediment flux (m$^3$ a$^{-1}$)')
 ax2.set_ylabel('Sediment flux (m$^3$ a$^{-1}$)')
 
 # ax.set_ylim([0, 56000])
-ax2.set_ylim([5500, 15000])
+ax2.set_ylim([1500, 4500])
 
 ax2.spines['left'].set_color(blue)
 ax.tick_params(axis='y', colors=blue)
