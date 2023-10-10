@@ -5,10 +5,10 @@ import tomli
 
 from basis.src.basis import BasalIceStratigrapher
 
-plt.rcParams.update({'font.size': 18})
+plt.rcParams.update({'font.size': 14})
 
 BIS = BasalIceStratigrapher()
-BIS.initialize('./experiments/static-effective-pressure/input_file.toml')
+BIS.initialize('./experiments/static-effective-pressure/slow_input_file.toml')
 
 mask = np.where(
     BIS.grid.at_node['ice_thickness'] > 0.5,
@@ -16,65 +16,71 @@ mask = np.where(
     0
 )
 
-fig, axes = plt.subplots(2, 4, figsize = (26, 14))
-a = 0
+for scenario in ['slow', 'fast']:
+    input_dir = './experiments/static-effective-pressure/outputs/' + scenario + '/spatial/'
 
-for N in [60, 80, 90, 95]:
-    fringe = np.loadtxt('./experiments/static-effective-pressure/outputs/fringe_Pw_' + str(N) + '_pct.txt')
-    disp = np.loadtxt('./experiments/static-effective-pressure/outputs/dispersed_Pw_' + str(N) + '_pct.txt')
+    fig, axes = plt.subplots(2, 4, figsize = (30, 24))
+    a = 0
 
-    axf = axes[1, a]
-    axd = axes[0, a]
+    for N in [60, 80, 90, 95]:
+        fringe = np.loadtxt(input_dir + 'fringe_Pw_' + str(N) + '.txt')
+        disp = np.loadtxt(input_dir + 'dispersed_Pw_' + str(N) + '.txt')
 
-    axf.imshow(np.flip(np.reshape(mask, BIS.grid.shape), axis = 0), cmap = 'Greys_r')
+        axf = axes[1, a]
+        axd = axes[0, a]
 
-    field = np.flip(np.reshape(fringe, BIS.grid.shape), axis = 0)
-    toplot = np.where(
-        field > 1e-3,
-        field,
-        np.nan
-    )
+        axf.imshow(np.reshape(mask, BIS.grid.shape), cmap = 'Greys_r')
 
-    fmin = 0
-    fmax = 8.5
-    dmin = 0
-    dmax = 4.5
+        field = np.reshape(fringe, BIS.grid.shape)
+        toplot = np.where(
+            field > 1e-3,
+            field,
+            np.nan
+        )
 
-    im = axf.imshow(toplot, cmap = 'pink_r', vmin = fmin, vmax = fmax)
-    cbar = plt.colorbar(im, ax = axf, fraction = 0.0543, pad = 0.04)
-    cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+        fmin = 0
+        fmax = 8.5
+        dmin = 0
+        dmax = 4.5
 
-    # axf.set_title('N = ' + str(100 - N) + '% P$_i$')
-    axf.set_title('Frozen fringe (m)')
-    axf.set_xlabel('Grid x')
-    axf.set_ylabel('Grid y')
+        im = axf.imshow(toplot, cmap = 'pink_r')
+        cbar = plt.colorbar(im, ax = axf, fraction = 0.0543, pad = 0.04)
+        cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
 
-    axd.imshow(np.flip(np.reshape(mask, BIS.grid.shape), axis = 0), cmap = 'Greys_r')
+        # axf.set_title('N = ' + str(100 - N) + '% P$_i$')
+        axf.set_title('Frozen fringe (m)')
+        axf.set_xlabel('Grid x')
+        axf.set_ylabel('Grid y')
 
-    field = np.flip(np.reshape(disp, BIS.grid.shape), axis = 0)
-    icemask = np.flip(np.reshape(BIS.grid.at_node['ice_thickness'], BIS.grid.shape), axis = 0)
+        axd.imshow(np.reshape(mask, BIS.grid.shape), cmap = 'Greys_r')
 
-    toplot = np.where(
-        icemask > 0.5,
-        field,
-        np.nan
-    )
+        field = np.reshape(disp, BIS.grid.shape)
+        icemask = np.reshape(BIS.grid.at_node['ice_thickness'], BIS.grid.shape)
 
-    im = axd.imshow(toplot, cmap = 'pink_r', vmin = dmin, vmax = dmax)
-    cbar = plt.colorbar(im, ax = axd, fraction = 0.0543, pad = 0.04)
-    cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+        toplot = np.where(
+            icemask > 0.5,
+            field,
+            np.nan
+        )
 
-    # axd.set_title('N = ' + str(100 - N) + '% P$_i$')
-    axd.set_title('Dispersed layer (m)')
-    axd.set_xlabel('Grid x')
-    axd.set_ylabel('Grid y')
+        im = axd.imshow(toplot, cmap = 'pink_r')
+        cbar = plt.colorbar(im, ax = axd, fraction = 0.0543, pad = 0.04)
+        cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
 
-    a += 1
+        # axd.set_title('N = ' + str(100 - N) + '% P$_i$')
+        axd.set_title('Dispersed layer (m)')
+        axd.set_xlabel('Grid x')
+        axd.set_ylabel('Grid y')
 
-plt.annotate('Frozen fringe thickness (m) at end of simulation', [0.355, 0.475], xycoords = 'figure fraction', fontsize = 22)
-plt.suptitle('Dispersed layer thickness (m) at end of simulation')
-plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.35, hspace=0.1)
-plt.savefig('./figures/advection_results.png', dpi = 300)
+        a += 1
+
+    plt.annotate('Frozen fringe thickness (m) at end of simulation', [0.355, 0.475], xycoords = 'figure fraction', fontsize = 22)
+    plt.suptitle('Dispersed layer thickness (m) at end of simulation')
+    plt.tight_layout()
+    plt.show()
+
+    # plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.35, hspace=0.1)
+    # plt.savefig('./figures/slow_scenario_results.png', dpi = 300)
 
 # -------------------------------------------------
 
