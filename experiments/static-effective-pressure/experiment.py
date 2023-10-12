@@ -25,12 +25,14 @@ for scenario in scenarios:
         )
         model.set_value('basal_water_pressure', basal_water_pressure)
 
-        model.set_value('sliding_velocity_y', model.grid.at_node['sliding_velocity_y'][:] * -1)
-
         model.calc_effective_pressure()
         model.calc_shear_stress()
         model.calc_erosion_rate()
         model.calc_melt_rate()
+
+        imshow_grid(model.grid, model.params['slip_law_coefficient'] * model.grid.at_node['effective_pressure'] * model.sec_per_a, cmap = 'jet')
+        plt.show()
+        break
 
         # Identify terminus nodes
         dx = model.grid.dx

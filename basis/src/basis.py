@@ -61,7 +61,7 @@ class BasalIceStratigrapher:
                 if len(field.shape) == 3:
                     field = field[0]
 
-                self.grid.add_field(variable, np.flip(field, axis = 0), at = 'node')
+                self.grid.add_field(variable, field, at = 'node')
             
             else:
                 value = np.full(self.grid.shape, info['value'])
