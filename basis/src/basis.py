@@ -104,6 +104,7 @@ class BasalIceStratigrapher:
 
         self.grid.add_zeros('till_thickness', at = 'node')
         self.grid.add_zeros('fringe_thickness', at = 'node')
+        self.grid.add_full('fringe_concentration', 1 - self.params['frozen_fringe_porosity'], at = 'node')
         self.grid.add_zeros('dispersed_layer_thickness', at = 'node')
         self.grid.add_full('dispersed_concentration', self.params['initial_dispersed_concentration'], at = 'node')
 

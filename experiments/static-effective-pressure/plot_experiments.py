@@ -5,16 +5,19 @@ import tomli
 
 from basis.src.basis import BasalIceStratigrapher
 
-plt.rcParams.update({'font.size': 14})
+plt.rcParams.update({'font.size': 12})
 
-BIS = BasalIceStratigrapher()
-BIS.initialize('./experiments/static-effective-pressure/slow_input_file.toml')
+model = BasalIceStratigrapher()
+model.initialize('./experiments/static-effective-pressure/slow_input_file.toml')
 
 mask = np.where(
-    BIS.grid.at_node['ice_thickness'] > 0.5,
+    model.grid.at_node['ice_thickness'] > 0.5,
     1,
     0
 )
+
+def regrid(field):
+    return np.flip(np.reshape(field, model.grid.shape), axis = 0)
 
 for scenario in ['slow', 'fast']:
     input_dir = './experiments/static-effective-pressure/outputs/' + scenario + '/spatial/'
@@ -24,14 +27,14 @@ for scenario in ['slow', 'fast']:
 
     for N in [60, 80, 90, 95]:
         fringe = np.loadtxt(input_dir + 'fringe_Pw_' + str(N) + '.txt')
-        disp = np.loadtxt(input_dir + 'dispersed_Pw_' + str(N) + '.txt')
+        disp = np.loadtxt(input_dir + 'disp_Pw_' + str(N) + '.txt')
 
         axf = axes[1, a]
         axd = axes[0, a]
 
-        axf.imshow(np.reshape(mask, BIS.grid.shape), cmap = 'Greys_r')
+        axf.imshow(regrid(mask), cmap = 'Greys_r')
 
-        field = np.reshape(fringe, BIS.grid.shape)
+        field = regrid(fringe)
         toplot = np.where(
             field > 1e-3,
             field,
@@ -52,10 +55,10 @@ for scenario in ['slow', 'fast']:
         axf.set_xlabel('Grid x')
         axf.set_ylabel('Grid y')
 
-        axd.imshow(np.reshape(mask, BIS.grid.shape), cmap = 'Greys_r')
+        axd.imshow(regrid(mask), cmap = 'Greys_r')
 
-        field = np.reshape(disp, BIS.grid.shape)
-        icemask = np.reshape(BIS.grid.at_node['ice_thickness'], BIS.grid.shape)
+        field = regrid(disp)
+        icemask = regrid(model.grid.at_node['ice_thickness'])
 
         toplot = np.where(
             icemask > 0.5,
@@ -74,8 +77,8 @@ for scenario in ['slow', 'fast']:
 
         a += 1
 
-    plt.annotate('Frozen fringe thickness (m) at end of simulation', [0.355, 0.475], xycoords = 'figure fraction', fontsize = 22)
-    plt.suptitle('Dispersed layer thickness (m) at end of simulation')
+    # plt.annotate('Frozen fringe thickness (m) at end of simulation', [0.355, 0.475], xycoords = 'figure fraction', fontsize = 22)
+    # plt.suptitle('Dispersed layer thickness (m) at end of simulation')
     plt.tight_layout()
     plt.show()
 
@@ -122,10 +125,10 @@ for scenario in ['slow', 'fast']:
 #     ax = np.ravel(axes)[a]
 #     a += 1
 
-#     ax.imshow(np.flip(np.reshape(mask, BIS.grid.shape), axis = 0), cmap = 'Greys')
+#     ax.imshow(np.flip(np.reshape(mask, model.grid.shape), axis = 0), cmap = 'Greys')
 
-#     field = np.flip(np.reshape(disp, BIS.grid.shape), axis = 0)
-#     icemask = np.flip(np.reshape(BIS.grid.at_node['ice_thickness'], BIS.grid.shape), axis = 0)
+#     field = np.flip(np.reshape(disp, model.grid.shape), axis = 0)
+#     icemask = np.flip(np.reshape(model.grid.at_node['ice_thickness'], model.grid.shape), axis = 0)
 
 #     toplot = np.where(
 #         icemask > 0.5,

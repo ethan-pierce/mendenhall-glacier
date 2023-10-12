@@ -15,6 +15,8 @@ for scenario in scenarios:
     output_dir = './experiments/static-effective-pressure/outputs/' + scenario
 
     for N in Ns:
+        fringe_fname = 'fringe_Pw_' + str(int(N*100)) + '.txt'
+        disp_fname = 'disp_Pw_' + str(int(N*100)) + '.txt'
 
         # Initialize the model
         model = BasalIceStratigrapher()
@@ -30,14 +32,10 @@ for scenario in scenarios:
         model.calc_erosion_rate()
         model.calc_melt_rate()
 
-        imshow_grid(model.grid, model.params['slip_law_coefficient'] * model.grid.at_node['effective_pressure'] * model.sec_per_a, cmap = 'jet')
-        plt.show()
-        break
-
         # Identify terminus nodes
         dx = model.grid.dx
         dy = model.grid.dy
-        bounds = [50 * dx, 100 * dx, 185 * dy, 200 * dy]
+        bounds = [50 * dx, 100 * dx, 0 * dy, 35 * dy]
         model.identify_terminus(bounds, depth = 3)
 
         outflow = model.grid.add_field(
@@ -87,17 +85,13 @@ for scenario in scenarios:
             
         print('Completed spin-up: ' + str(np.round(model.time_elapsed / model.sec_per_a, 2)) + ' years elapsed.')
 
-        imshow_grid(model.grid, model.grid.at_node['fringe_thickness'])
-        plt.title('Fringe thickness (m) at 25a (' + scenario + ' scenario)')
-        plt.savefig(output_dir + '/spinup/fringe_spinup_Pw_' + str(100*N) + '.png')
-        plt.close()
+        np.savetxt(output_dir + '/spinup/' + fringe_fname, model.grid.at_node['fringe_thickness'])
+        np.savetxt(output_dir + '/spinup/' + disp_fname, model.grid.at_node['dispersed_layer_thickness'])
 
-        imshow_grid(model.grid, model.grid.at_node['dispersed_layer_thickness'])
-        plt.title('Dispersed thickness (m) at 25a (' + scenario + ' scenario)')
-        plt.savefig(output_dir + '/spinup/dispersed_spinup_Pw_' + str(100*N) + '.png')
-        plt.close()
-
+        #################
         # Advection model
+        #################
+
         ux = model.grid.map_mean_of_link_nodes_to_link('sliding_velocity_x')
         uy = model.grid.map_mean_of_link_nodes_to_link('sliding_velocity_y')
 
@@ -111,10 +105,11 @@ for scenario in scenarios:
 
         advect_fringe = AdvectTVD(model.grid, 'fringe_thickness', 'velocity_links')
         advect_disp = AdvectTVD(model.grid, 'dispersed_layer_thickness', 'velocity_links')
+        advect_conc = AdvectTVD(model.grid, 'fringe_concentration', 'velocity_links')
         
         dt = 1e6
 
-        for advector in [advect_fringe, advect_disp]:
+        for advector in [advect_fringe, advect_disp, advect_conc]:
             test_courant = np.max(np.abs(advector.calc_courant(advector._grid, advector._vel, dt)))
             print('CFL condition = ' + str(test_courant))
             if test_courant > 1:
@@ -124,11 +119,17 @@ for scenario in scenarios:
         n_steps = int(np.ceil(model.sec_per_a * end_year / dt))
         Qfs = []
         Qds = []
+
+        fringe_layers = []
+        disp_layers = []
+        concentrations = []
         
         for i in range(n_steps):
             
-            advector.update(dt)
+            advect_fringe.update(dt)
             advect_disp.update(dt)
+            advect_conc.update(dt)
+
             model.entrain_sediment(dt, clip = 99)
             model.time_elapsed += dt
             
@@ -152,17 +153,36 @@ for scenario in scenarios:
             convolution = np.ravel(convolve2d(Hd.reshape(model.grid.shape), kernel, mode = 'same'))
             Hd[Hd > np.percentile(Hd, cut)] = convolution[Hd > np.percentile(Hd, cut)]
 
+            # Track fringe concentration near the terminus
+            terminus_cf = np.where(
+                    model.grid.at_node['adjacent_to_terminus'],
+                    model.grid.at_node['fringe_concentration'],
+                    np.nan
+                )
+
+            if i % 30 == 0:
+                fringe_layers.append(model.grid.at_node['fringe_thickness'][:])
+                disp_layers.append(model.grid.at_node['dispersed_layer_thickness'][:])
+                concentrations.append(np.nanmean(terminus_cf))
+
             if i % 100 == 0:
                 print('Completed step ' + str(i))
                 
                 __, Qf, Qd = model.calc_sediment_flux()
                 Qfs.append(Qf)
                 Qds.append(Qd)
-                
-        print('Completed simulation with Pw = ' + str(int(N*100)) + ' * Pi.')    
-            
-        np.savetxt(output_dir + '/spatial/fringe_Pw_' + str(int(N*100)) + '.txt', model.grid.at_node['fringe_thickness'][:])
-        np.savetxt(output_dir + '/spatial/dispersed_Pw_' + str(int(N*100)) + '.txt', model.grid.at_node['dispersed_layer_thickness'][:])
 
-        np.savetxt(output_dir + '/flux/fringe_flux_Pw_' + str(int(N*100)) + '.txt', Qfs)
-        np.savetxt(output_dir + '/flux/dispersed_flux_Pw_' + str(int(N*100)) + '.txt', Qds)
+                print('Mean terminus Cf = ' + str(np.nanmean(terminus_cf)))
+                
+        print('Completed simulation with Pw = ' + str(N) + ' * Pi.')
+
+        np.savetxt(output_dir + '/concentration/' + fringe_fname, concentrations)    
+
+        np.savetxt(output_dir + '/history/' + fringe_fname, fringe_layers)    
+        np.savetxt(output_dir + '/history/' + disp_fname, disp_layers)    
+            
+        np.savetxt(output_dir + '/spatial/' + fringe_fname, model.grid.at_node['fringe_thickness'][:])
+        np.savetxt(output_dir + '/spatial/' + disp_fname, model.grid.at_node['dispersed_layer_thickness'][:])
+
+        np.savetxt(output_dir + '/flux/' + fringe_fname, Qfs)
+        np.savetxt(output_dir + '/flux/' + disp_fname, Qds)
