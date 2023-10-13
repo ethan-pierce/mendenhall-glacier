@@ -141,7 +141,7 @@ for scenario in scenarios:
             ) * dt
             Hd[Hd < 0] = 0.0
             
-            # Smooth values above the 99th percentile
+            # Add a small amount of diffusion for stability
             cut = 99
             
             kernel = np.ones((3, 3)) / 8
@@ -171,8 +171,6 @@ for scenario in scenarios:
                 __, Qf, Qd = model.calc_sediment_flux()
                 Qfs.append(Qf)
                 Qds.append(Qd)
-
-                print('Mean terminus Cf = ' + str(np.nanmean(terminus_cf)))
                 
         print('Completed simulation with Pw = ' + str(N) + ' * Pi.')
 
