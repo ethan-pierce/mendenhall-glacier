@@ -99,6 +99,7 @@ class BasalIceStratigrapher:
         self.grid.add_zeros('fringe_heave_rate', at = 'node')
         self.grid.add_zeros('fringe_growth_rate', at = 'node')
 
+        self.grid.add_field('critical_depth', np.full(self.grid.number_of_nodes, self.params['critical_depth']), at = 'node')
         self.grid.add_zeros('dispersed_layer_gradient', at = 'node')
         self.grid.add_zeros('dispersed_layer_growth_rate', at = 'node')
 
@@ -313,7 +314,7 @@ class BasalIceStratigrapher:
         g = self.params['gravity']
         L = self.params['ice_latent_heat']
         r = self.params['till_grain_radius']
-        z0 = self.params['critical_depth']
+        z0 = self.grid.at_node['critical_depth'][:]
         gamma = self.params['ice_clapeyron_slope']
         theta = self.grid.at_node['fringe_undercooling'][:]
 
