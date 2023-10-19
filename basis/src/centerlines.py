@@ -9,8 +9,8 @@ def identify_centerlines(masked_array, filter_size = 9, percentile = 70, outlet 
 
     # Identify pixels that are at or near the centerline
     distance_array = distance_transform_edt(masked_array.mask)
-    filter = np.ones((filter_size, filter_size))
-    center = distance_array > percentile_filter(distance_array, percentile, footprint=filter)
+    flter = np.ones((filter_size, filter_size))
+    center = distance_array > percentile_filter(distance_array, percentile, footprint=flter)
 
     # Identify the largest cohesive grouping of these pixels
     labeled, n_labels = label(center)
