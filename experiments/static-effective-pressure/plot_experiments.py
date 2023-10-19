@@ -22,7 +22,7 @@ def regrid(field):
 for scenario in ['slow', 'fast']:
     input_dir = './experiments/static-effective-pressure/outputs/' + scenario + '/spatial/'
 
-    fig, axes = plt.subplots(2, 4, figsize = (30, 24))
+    fig, axes = plt.subplots(2, 4, figsize = (30, 30))
     a = 0
 
     for N in [60, 80, 90, 95]:

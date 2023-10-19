@@ -77,7 +77,7 @@ class BasalIceStratigrapher:
 
         self.grid.add_zeros('sliding_velocity_magnitude', at = 'node')
         self.grid.at_node['sliding_velocity_magnitude'][:] = np.abs(
-            np.sqrt(self.grid.at_node['sliding_velocity_x'][:]**2 + self.grid.at_node['sliding_velocity_y'][:]**2 )
+            np.sqrt(self.grid.at_node['sliding_velocity_x'][:]**2 + self.grid.at_node['sliding_velocity_y'][:]**2)
         )
 
         self.grid.add_zeros('effective_pressure', at = 'node')

@@ -7,7 +7,7 @@ from landlab.plot import imshow_grid
 from basis.src.basis import BasalIceStratigrapher
 from basis.src.tvd_advection import AdvectTVD
 
-scenarios = ['slow', 'fast']
+scenarios = ['fast', 'slow']
 Ns = [0.95, 0.9, 0.8, 0.6]
 
 for scenario in scenarios:
@@ -46,6 +46,8 @@ for scenario in scenarios:
             ),
             at = 'node'
         )
+
+        mask = model.grid.at_node['ice_thickness'] > 0.1
 
         # Start with initial sediment package
         initial_till = np.full(model.grid.number_of_nodes, 40)
@@ -115,7 +117,7 @@ for scenario in scenarios:
             if test_courant > 1:
                 print('Advection likely unstable under CFL condition.')
             
-        end_year = 250
+        end_year = 300
         n_steps = int(np.ceil(model.sec_per_a * end_year / dt))
         Qfs = []
         Qds = []
@@ -135,23 +137,27 @@ for scenario in scenarios:
             
             # Introduce outflow condition
             Hd = model.grid.at_node['dispersed_layer_thickness'][:]
-            
-            Hd[outflow > 0] -= (
-                (Hd[outflow > 0] / model.grid.dx) * outflow[outflow > 0]
+            Hf = model.grid.at_node['fringe_thickness'][:]
+
+            Hd[mask][outflow[mask] > 0] -= (
+                (Hd[mask][outflow[mask] > 0] / model.grid.dx) * outflow[mask][outflow[mask] > 0]
             ) * dt
-            Hd[Hd < 0] = 0.0
+            Hd[mask][Hd[mask] < 1e-9] = 1e-9
             
             # Add a small amount of diffusion for stability
             cut = 99
             
             kernel = np.ones((3, 3)) / 8
             kernel[1, 1] = 0
-            Hf = model.grid.at_node['fringe_thickness'][:]
             convolution = np.ravel(convolve2d(Hf.reshape(model.grid.shape), kernel, mode = 'same'))
-            Hf[Hf > np.percentile(Hf, cut)] = convolution[Hf > np.percentile(Hf, cut)]
+            Hf[Hf > np.percentile(Hf[mask], cut)] = convolution[Hf > np.percentile(Hf[mask], cut)]
             
             convolution = np.ravel(convolve2d(Hd.reshape(model.grid.shape), kernel, mode = 'same'))
-            Hd[Hd > np.percentile(Hd, cut)] = convolution[Hd > np.percentile(Hd, cut)]
+            Hd[Hd > np.percentile(Hd[mask], cut)] = convolution[Hd > np.percentile(Hd[mask], cut)]
+
+            # Set values outside of the glacier to (almost) zero
+            Hd[~mask] = 1e-9
+            Hf[~mask] = 1e-6
 
             # Track fringe concentration near the terminus
             terminus_cf = np.where(
