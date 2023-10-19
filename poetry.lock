@@ -491,6 +491,22 @@ files = [
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
+name = "cmcrameri"
+version = "1.7"
+description = "Perceptually uniform colormaps by Fabio Crameri"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "cmcrameri-1.7-py3-none-any.whl", hash = "sha256:97f9ae687253bfdaab06081172db4ba14c6638eb3ca0a6c82a5874e99b6ee344"},
+    {file = "cmcrameri-1.7.tar.gz", hash = "sha256:581f459809ce1951bbd305b7992d56185bab33a79efd40059d414365ef97abfe"},
+]
+
+[package.dependencies]
+matplotlib = "*"
+numpy = "*"
+packaging = "*"
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
@@ -2906,4 +2922,4 @@ viz = ["matplotlib", "nc-time-axis", "seaborn"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "74d534ba47f9813bee1af1f0715ffb2308771f7a77ae5c3d88a8b30566186149"
+content-hash = "e464f9a21c96528f893b4647b3952d456940a24da40e9eae5bb9a3c907d22964"
