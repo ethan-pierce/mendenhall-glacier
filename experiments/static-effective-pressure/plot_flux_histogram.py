@@ -7,54 +7,59 @@ from basis.src.basis import BasalIceStratigrapher
 
 plt.rcParams.update({'font.size': 14})
 
-Ns = [60, 65, 70, 75, 80, 85, 90, 95]
-fboxes = []
-dboxes = []
+Ns = [60, 80, 90, 95]
+boxplots = {
+    'slow': {N: [] for N in Ns},
+    'fast': {N: [] for N in Ns}
+}
 
-ffluxes = []
-dfluxes = []
+fluxes = {
+    'slow': [],
+    'fast': []
+}
 
-for N in Ns:
-    fringe = np.loadtxt('./experiments/static-effective-pressure/outputs/fringe_Pw_' + str(N) + '_pct.txt')
-    disp = np.loadtxt('./experiments/static-effective-pressure/outputs/dispersed_Pw_' + str(N) + '_pct.txt')
+for scenario in ['slow', 'fast']:
+    for N in Ns:
+        fringe = np.loadtxt('./experiments/static-effective-pressure/outputs/' + scenario + '/flux/fringe_Pw_' + str(N) + '.txt')
+        disp = np.loadtxt('./experiments/static-effective-pressure/outputs/' + scenario + '/flux/disp_Pw_' + str(N) + '.txt')
 
-    BIS = BasalIceStratigrapher()
-    BIS.initialize('./experiments/static-effective-pressure/input_file.toml')
+        BIS = BasalIceStratigrapher()
+        BIS.initialize('./experiments/static-effective-pressure/' + scenario + '_input_file.toml')
 
-    BIS.set_value('fringe_thickness', fringe)
-    BIS.set_value('dispersed_layer_thickness', disp)
+        BIS.set_value('fringe_thickness', fringe)
+        BIS.set_value('dispersed_layer_thickness', disp)
 
-    dx = BIS.grid.dx
-    dy = BIS.grid.dy
-    bounds = [50 * dx, 100 * dx, 0 * dy, 15 * dy]
-    BIS.identify_terminus(bounds, depth = 2)
-    depth1 = BIS.east_boundary + BIS.north_boundary + BIS.west_boundary + BIS.south_boundary
-    depth2 = BIS.adjacent_to_terminus
+        dx = BIS.grid.dx
+        dy = BIS.grid.dy
+        bounds = [50 * dx, 100 * dx, 0 * dy, 35 * dy]
+        BIS.identify_terminus(bounds, depth = 3)
+        depth1 = BIS.east_boundary + BIS.north_boundary + BIS.west_boundary + BIS.south_boundary
+        depth2 = BIS.adjacent_to_terminus
 
-    fboxes.append(BIS.grid.at_node['fringe_thickness'][depth2])
-    dboxes.append(BIS.grid.at_node['dispersed_layer_thickness'][depth2])
+        fboxes.append(BIS.grid.at_node['fringe_thickness'][depth2])
+        dboxes.append(BIS.grid.at_node['dispersed_layer_thickness'][depth2])
 
-    # fflux = np.loadtxt('./experiments/static-effective-pressure/outputs/fringe_flux_Pw_' + str(N) + '_pct.txt')
-    # dflux = np.loadtxt('./experiments/static-effective-pressure/outputs/dispersed_flux_Pw_' + str(N) + '_pct.txt')
+        # fflux = np.loadtxt('./experiments/static-effective-pressure/outputs/fringe_flux_Pw_' + str(N) + '_pct.txt')
+        # dflux = np.loadtxt('./experiments/static-effective-pressure/outputs/dispersed_flux_Pw_' + str(N) + '_pct.txt')
 
-    fflux = np.sum(
-        BIS.grid.at_node['fringe_thickness'][depth2]
-        * BIS.grid.dx
-        * BIS.grid.at_node['sliding_velocity_magnitude'][depth2]
-        * 0.6
-        * BIS.sec_per_a
-    )
+        fflux = np.sum(
+            BIS.grid.at_node['fringe_thickness'][depth2]
+            * BIS.grid.dx
+            * BIS.grid.at_node['sliding_velocity_magnitude'][depth2]
+            * 0.6
+            * BIS.sec_per_a
+        )
 
-    dflux = np.sum(
-        BIS.grid.at_node['dispersed_layer_thickness'][depth2]
-        * BIS.grid.dx 
-        * BIS.grid.at_node['sliding_velocity_magnitude'][depth2]
-        * 0.05
-        * BIS.sec_per_a
-    )
+        dflux = np.sum(
+            BIS.grid.at_node['dispersed_layer_thickness'][depth2]
+            * BIS.grid.dx 
+            * BIS.grid.at_node['sliding_velocity_magnitude'][depth2]
+            * 0.05
+            * BIS.sec_per_a
+        )
 
-    ffluxes.append(fflux)
-    dfluxes.append(dflux)
+        ffluxes.append(fflux)
+        dfluxes.append(dflux)
 
 print(np.array(ffluxes) + np.array(dfluxes))
 
