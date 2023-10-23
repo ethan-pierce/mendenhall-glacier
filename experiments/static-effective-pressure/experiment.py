@@ -125,6 +125,8 @@ for scenario in scenarios:
         fringe_layers = []
         disp_layers = []
         concentrations = []
+
+        old_fringe = model.grid.at_node['fringe_thickness'][:]
         
         for i in range(n_steps):
             
@@ -170,6 +172,9 @@ for scenario in scenarios:
                 fringe_layers.append(model.grid.at_node['fringe_thickness'][:])
                 disp_layers.append(model.grid.at_node['dispersed_layer_thickness'][:])
                 concentrations.append(np.nanmean(terminus_cf))
+
+                imshow_grid(model.grid, 'fringe_thickness')
+                plt.show()
 
             if i % 100 == 0:
                 print('Completed step ' + str(i))

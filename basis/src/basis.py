@@ -115,8 +115,8 @@ class BasalIceStratigrapher:
 
     def identify_terminus(self, bounds = [], depth = 1):
         """Identify nodes that compose the glacier terminus."""
-        self.grid.add_zeros('is_terminus', at = 'node', clobber = True)
-        self.grid.add_zeros('adjacent_to_terminus', at = 'node', clobber = True)
+        self.grid.add_zeros('is_terminus', at = 'node', dtype = int, clobber = True)
+        self.grid.add_zeros('adjacent_to_terminus', at = 'node', dtype = int, clobber = True)
 
         if len(bounds) != 4:
             bounds = [0, self.grid.shape[1], 0, self.grid.shape[0]]
