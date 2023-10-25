@@ -11,8 +11,7 @@ plt.style.use('tableau-colorblind10')
 plt.rcParams.update({'font.size': 18})
 plt.rcParams.update({'image.cmap': 'cmc.bilbaoS'})
 
-Ns = [60, 80, 90, 95]
-ps = [70, 70, 70, 70]
+Ns = [60, 65, 70, 75, 80, 85, 90, 95]
 
 for scenario in ['slow', 'fast']:
     results = {N: {'fvals': None, 'dvals': None} for N in Ns}
@@ -23,7 +22,7 @@ for scenario in ['slow', 'fast']:
 
     for i in range(len(Ns)):
         N = Ns[i]
-        p = ps[i]
+        p = 70
 
         fringe = np.loadtxt('./experiments/static-effective-pressure/outputs/' + scenario + '/spatial/fringe_Pw_' + str(N) + '.txt')
         disp = np.loadtxt('./experiments/static-effective-pressure/outputs/' + scenario + '/spatial/disp_Pw_' + str(N) + '.txt')
