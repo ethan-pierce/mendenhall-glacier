@@ -3,9 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cmcrameri as cmc
 import copy
+from skimage.morphology import skeletonize, erosion, dilation
 from scipy.ndimage import gaussian_filter1d
 from basis.src.basis import BasalIceStratigrapher
-from basis.src.centerlines import identify_centerlines
 
 plt.style.use('tableau-colorblind10')
 plt.rcParams.update({'font.size': 18})
@@ -13,7 +13,7 @@ plt.rcParams.update({'image.cmap': 'cmc.bilbaoS'})
 
 Ns = [60, 65, 70, 75, 80, 85, 90, 95]
 
-for scenario in ['slow', 'fast']:
+for scenario in ['fast', 'slow']:
     results = {N: {'fvals': None, 'dvals': None} for N in Ns}
 
     model = BasalIceStratigrapher()
@@ -22,6 +22,7 @@ for scenario in ['slow', 'fast']:
 
     for i in range(len(Ns)):
         N = Ns[i]
+        N = 95
         p = 70
 
         fringe = np.loadtxt('./experiments/static-effective-pressure/outputs/' + scenario + '/spatial/fringe_Pw_' + str(N) + '.txt')
@@ -30,11 +31,29 @@ for scenario in ['slow', 'fast']:
         fringe = np.flip(fringe.reshape(224, 197), axis = 0)
         disp = np.flip(disp.reshape(224, 197), axis = 0)
 
+        image = np.where(glacier > 0.1, 1, 0)
+        N = 3
+        smooth = lambda x: dilation(erosion(erosion(dilation(x, footprint = np.ones((N, N))), footprint = np.ones((N, N))), footprint = np.ones((N, N))), footprint = np.ones((N, N)))
+        centerline = skeletonize(smooth(image))
+
+        plt.imshow(centerline, cmap = 'Greys_r')
+        plt.show()
+        quit()
+
         fringe = np.ma.masked_where(glacier > 0.5, fringe)
         disp = np.ma.masked_where(glacier > 0.5, disp)
 
-        fgroup, fdist = identify_centerlines(fringe, percentile=p)
-        dgroup, ddist = identify_centerlines(disp, percentile=p)
+        outlet_y = np.min(model.grid.node_y[glacier])
+        outlet_x = np.argwhere(model.grid.node_y[glacier] == outlet_y[glacier])
+
+        fgroup, fdist = identify_centerlines(fringe, percentile=p, outlet = outlet)
+        dgroup, ddist = identify_centerlines(disp, percentile=p, outlet = outlet)
+
+        im = plt.imshow(np.reshape(fgroup, model.grid.shape), cmap = 'Blues_r')
+        plt.imshow(np.reshape(np.where(glacier, np.nan, 1.0), model.grid.shape), cmap = 'Greys')
+        plt.colorbar(im)
+        plt.show()
+        quit()
 
         fringe_masked = np.where(fdist > 0, fringe, 0)
         disp_masked = np.where(ddist > 0, disp, 0)
