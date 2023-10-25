@@ -7,8 +7,8 @@ from landlab.plot import imshow_grid
 from basis.src.basis import BasalIceStratigrapher
 from basis.src.tvd_advection import AdvectTVD
 
-scenarios = ['fast', 'slow']
-Ns = [0.95, 0.9, 0.8, 0.6]
+scenarios = ['slow', 'fast']
+Ns = [0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
 
 for scenario in scenarios:
     input_file = './experiments/static-effective-pressure/' + scenario + '_input_file.toml'
@@ -125,8 +125,6 @@ for scenario in scenarios:
         fringe_layers = []
         disp_layers = []
         concentrations = []
-
-        old_fringe = model.grid.at_node['fringe_thickness'][:]
         
         for i in range(n_steps):
             
@@ -169,12 +167,9 @@ for scenario in scenarios:
                 )
 
             if i % 30 == 0:
-                fringe_layers.append(model.grid.at_node['fringe_thickness'][:])
-                disp_layers.append(model.grid.at_node['dispersed_layer_thickness'][:])
+                fringe_layers.append(model.grid.at_node['fringe_thickness'][:].copy())
+                disp_layers.append(model.grid.at_node['dispersed_layer_thickness'][:].copy())
                 concentrations.append(np.nanmean(terminus_cf))
-
-                imshow_grid(model.grid, 'fringe_thickness')
-                plt.show()
 
             if i % 100 == 0:
                 print('Completed step ' + str(i))
