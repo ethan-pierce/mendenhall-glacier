@@ -1,6 +1,8 @@
 """Plot the centerlines of static experiments."""
 import numpy as np
 import matplotlib.pyplot as plt
+import geopandas as gpd
+import xarray as xr
 import cmcrameri as cmc
 import copy
 from skimage.morphology import skeletonize, erosion, dilation
@@ -10,6 +12,8 @@ from basis.src.basis import BasalIceStratigrapher
 plt.style.use('tableau-colorblind10')
 plt.rcParams.update({'font.size': 18})
 plt.rcParams.update({'image.cmap': 'cmc.bilbaoS'})
+
+centerline = gpd.read_csv('')
 
 Ns = [60, 65, 70, 75, 80, 85, 90, 95]
 
