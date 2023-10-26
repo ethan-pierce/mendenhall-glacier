@@ -13,7 +13,9 @@ plt.style.use('tableau-colorblind10')
 plt.rcParams.update({'font.size': 18})
 plt.rcParams.update({'image.cmap': 'cmc.bilbaoS'})
 
-centerline = gpd.read_csv('')
+centerline = gpd.read_file('./inputs/centerline.geojson')
+print(centerline)
+quit()
 
 Ns = [60, 65, 70, 75, 80, 85, 90, 95]
 
