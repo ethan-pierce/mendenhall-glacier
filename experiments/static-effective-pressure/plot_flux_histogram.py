@@ -1,11 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import cmcrameri as cmc
+
 import tomli
 from landlab.plot import imshow_grid
 from basis.src.basis import BasalIceStratigrapher
 
 plt.rcParams.update({'font.size': 14})
+plt.style.use('tableau-colorblind10')
+plt.rcParams.update({'image.cmap': 'cmc.bilbaoS'})
 
 Ns = [60, 65, 70, 75, 80, 85, 90, 95]
 boxplots = {
@@ -24,50 +28,61 @@ for scenario in ['slow', 'fast']:
 
     dx = model.grid.dx
     dy = model.grid.dy
-    bounds = [50 * dx, 100 * dx, 0 * dy, 35 * dy]
-    model.identify_terminus(bounds, depth = 3)
+    bounds = [50 * dx, 70 * dx, 0 * dy, 40 * dy]
+    model.identify_terminus(bounds, depth = 2)
 
     idx = np.ravel(np.argwhere(model.grid.at_node['adjacent_to_terminus'] | model.grid.at_node['is_terminus']))
 
     for N in Ns:
-        fringe_flux = np.loadtxt('./experiments/static-effective-pressure/outputs/' + scenario + '/flux/fringe_Pw_' + str(N) + '.txt')
-        dispersed_flux = np.loadtxt('./experiments/static-effective-pressure/outputs/' + scenario + '/flux/disp_Pw_' + str(N) + '.txt')
-
-        fluxes[scenario]['fringe'].append(fringe_flux[-1])
-        fluxes[scenario]['dispersed'].append(dispersed_flux[-1])
-
         fringe_2d = np.loadtxt('./experiments/static-effective-pressure/outputs/' + scenario + '/spatial/fringe_Pw_' + str(N) + '.txt')
         dispersed_2d = np.loadtxt('./experiments/static-effective-pressure/outputs/' + scenario + '/spatial/disp_Pw_' + str(N) + '.txt')
 
         boxplots[scenario]['fringe'].append(fringe_2d[idx][fringe_2d[idx] != 1e-6])
         boxplots[scenario]['dispersed'].append(dispersed_2d[idx])
 
-# # Frozen fringe fluxes
-# fig, ax = plt.subplots(figsize = (12 , 6))
+        ffluxes = fringe_2d[idx] * model.grid.dx * model.grid.at_node['sliding_velocity_magnitude'][idx] * model.sec_per_a * 0.6
+        dfluxes = dispersed_2d[idx] * model.grid.dx * model.grid.at_node['sliding_velocity_magnitude'][idx] * model.sec_per_a * 0.05
+        
+        fluxes[scenario]['fringe'].append(ffluxes)
+        fluxes[scenario]['dispersed'].append(dfluxes)
 
-# ax.scatter(Ns, fluxes['slow']['fringe'], label = 'SLOW scenario')
-# ax.plot(Ns, fluxes['slow']['fringe'], linestyle = ':', color = 'C0')
+cf = 'C4'
+cd = 'C5'
 
-# ax.scatter(Ns, fluxes['fast']['fringe'], label = 'FAST scenario')
-# ax.plot(Ns, fluxes['fast']['fringe'], linestyle = ':', color = 'C1')
+cslow = 'tab:purple'
+cfast = 'tab:red'
 
-# ax.fill_between(Ns, fluxes['slow']['fringe'], np.array(fluxes['slow']['fringe']) + np.array(fluxes['slow']['dispersed']), alpha = 0.25, linestyle = ':-', color = 'C0')
-# ax.fill_between(Ns, fluxes['fast']['fringe'], np.array(fluxes['fast']['fringe']) + np.array(fluxes['fast']['dispersed']), alpha = 0.25, linestyle = ':-', color = 'C1')
+Nlabels = [str(100 - i) for i in Ns]
 
-# plt.legend()
-# plt.show()
+# Frozen fringe fluxes
+fig, ax = plt.subplots(figsize = (12 , 6))
 
-# # Dispersed layer fluxes
-# fig, ax = plt.subplots(figsize = (12 , 6))
+ax.scatter(Nlabels, np.sum(fluxes['slow']['fringe'], axis = 1), label = 'SLOW scenario', color = cslow)
+ax.plot(Nlabels, np.sum(fluxes['slow']['fringe'], axis = 1), linestyle = ':', color = cslow)
 
-# ax.scatter(Ns, fluxes['slow']['dispersed'], label = 'SLOW scenario')
-# ax.plot(Ns, fluxes['slow']['dispersed'], linestyle = ':', color = 'C0')
+ax.scatter(Nlabels, np.sum(fluxes['fast']['fringe'], axis = 1), label = 'FAST scenario', color = cfast)
+ax.plot(Nlabels, np.sum(fluxes['fast']['fringe'], axis = 1), linestyle = ':', color = cfast)
 
-# ax.scatter(Ns, fluxes['fast']['dispersed'], label = 'FAST scenario')
-# ax.plot(Ns, fluxes['fast']['dispersed'], linestyle = ':', color = 'C1')
+ax.set_xlabel('Effective pressure (% of overburden)')
+ax.set_ylabel('Sediment flux (m$^3$ a$^{-1}$)')
+plt.title('Frozen fringe flux', size = 18)
+plt.legend()
+plt.savefig('./figures/fringe_fluxes.png', dpi = 300)
 
-# plt.legend()
-# plt.show()
+# Dispersed layer fluxes
+fig, ax = plt.subplots(figsize = (12 , 6))
+
+ax.scatter(Nlabels, np.sum(fluxes['slow']['dispersed'], axis = 1), label = 'SLOW scenario', color = cslow)
+ax.plot(Nlabels, np.sum(fluxes['slow']['dispersed'], axis = 1), linestyle = ':', color = cslow)
+
+ax.scatter(Nlabels, np.sum(fluxes['fast']['dispersed'], axis = 1), label = 'FAST scenario', color = cfast)
+ax.plot(Nlabels, np.sum(fluxes['fast']['dispersed'], axis = 1), linestyle = ':', color = cfast)
+
+ax.set_xlabel('Effective pressure (% of overburden)')
+ax.set_ylabel('Sediment flux (m$^3$ a$^{-1}$)')
+plt.title('Dispersed layer flux', size = 18)
+plt.legend()
+plt.savefig('./figures/dispersed_fluxes.png', dpi = 300)
 
 # Layer thickness boxplots
 fig, ax = plt.subplots(figsize = (12, 6))
@@ -116,7 +131,7 @@ legend_elements = [plt.Rectangle((0, 0), 1, 1, facecolor='lightblue', edgecolor=
                    plt.Rectangle((0, 0), 1, 1, facecolor='navajowhite', edgecolor='orange', label='Dispersed layer')]
 ax.legend(handles=legend_elements, loc='upper right')
 
-plt.show()
+plt.savefig('./figures/slow_scenario_layers.png', dpi = 300)
 
 # Layer thickness boxplots
 fig, ax = plt.subplots(figsize = (12, 6))
@@ -165,4 +180,4 @@ legend_elements = [plt.Rectangle((0, 0), 1, 1, facecolor='lightblue', edgecolor=
                    plt.Rectangle((0, 0), 1, 1, facecolor='navajowhite', edgecolor='orange', label='Dispersed layer')]
 ax.legend(handles=legend_elements, loc='upper right')
 
-plt.show()
+plt.savefig('./figures/fast_scenario_layers.png', dpi = 300)
