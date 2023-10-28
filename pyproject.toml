@@ -19,6 +19,7 @@ jupyterlab = "^4.0.0"
 cmcrameri = "^1.7"
 scikit-image = "^0.22.0"
 geopandas = "^0.14.0"
+rioxarray = "^0.15.0"
 
 
 [build-system]
