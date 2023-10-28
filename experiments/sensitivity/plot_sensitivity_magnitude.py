@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 plt.rcParams.update({'font.size': 24})
+plt.style.use('tableau-colorblind10')
 
 working_dir = './experiments/sensitivity/'
 df = pd.read_csv(working_dir + 'outputs/results.csv')
@@ -83,7 +84,7 @@ for var in vars_list:
 
 width = 0.6
 xs = np.arange(len(vars_list))
-colors = ['cornflowerblue', 'navajowhite']
+colors = ['C4', 'C5']
 
 fig, ax = plt.subplots(2, 1, figsize=(22, 24))
 
@@ -125,4 +126,4 @@ for axis in ax:
 plt.suptitle('Sensitivity Magnitude', fontsize = 40)
 plt.subplots_adjust(top = 0.9)
 plt.tight_layout()
-plt.savefig(working_dir + '/outputs/sensitivity_magnitude.png', dpi = 300)
+plt.savefig('./figures/sensitivity_magnitude.png', dpi = 300)

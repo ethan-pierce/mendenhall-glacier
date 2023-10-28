@@ -54,13 +54,13 @@ for scenario in ['fast', 'slow']:
         fringe = Hf[np.nonzero(np.where(model.grid.at_node['centerline'][:] == 1, Hf, 0))]
         dispersed = Hd[np.nonzero(np.where(model.grid.at_node['centerline'][:] == 1, Hd, 0))]
 
-        i = 2
+        i = 0
         sort = np.argsort(distance)
         sorted_distance = distance[sort][i:] * 1e-3
         sorted_fringe = gaussian_filter1d(fringe[sort], sigma = 1)[i:]
         sorted_dispersed = gaussian_filter1d(fringe[sort], sigma = 1)[i:] + gaussian_filter1d(dispersed[sort], sigma = 1)[i:]
 
-        fig, ax = plt.subplots(figsize = (32, 4))
+        fig, ax = plt.subplots(figsize = (32, 6))
         fcol = 'C4'
         dcol = 'C5'
 

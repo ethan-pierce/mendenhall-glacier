@@ -2,8 +2,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
+import cmcrameri as cmc
 
+plt.style.use('tableau-colorblind10')
 plt.rcParams.update({'font.size': 22})
+plt.rcParams.update({'image.cmap': 'cmc.bilbaoS'})
 
 working_dir = './experiments/sensitivity/'
 df = pd.read_csv(working_dir + 'outputs/results.csv')
@@ -80,7 +83,7 @@ units = {
 }
 logs = ['sliding_velocity_x', 'till_grain_radius', 'pore_throat_radius']
 
-colors = ['tab:blue', 'tab:orange']
+colors = ['C4', 'C5']
 
 fig, ax = plt.subplots(3, 4, figsize = (32, 16))
 plt.suptitle('Sensitivity experiments', fontsize = 36)
@@ -131,4 +134,4 @@ for i in range(len(vars_list)):
 
 plt.tight_layout()
 # plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.5, hspace=0.3)
-plt.savefig(working_dir + '/outputs/sensitivity.png')
+plt.savefig('./figures/sensitivity.png', dpi = 300)
