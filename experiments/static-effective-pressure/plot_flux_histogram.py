@@ -85,140 +85,140 @@ Nlabels = [str(100 - i) for i in Ns]
 # plt.savefig('./figures/dispersed_fluxes.png', dpi = 300)
 
 # All fluxes
-fastmark = 'o'
-slowmark = 'x'
-fringecol = 'C4'
-dispcol = 'C5'
+# fastmark = 'o'
+# slowmark = 'x'
+# fringecol = 'C4'
+# dispcol = 'C5'
 
-fig, ax = plt.subplots(figsize = (12 , 6))
-ax2 = ax.twinx()
+# fig, ax = plt.subplots(figsize = (12 , 6))
+# ax2 = ax.twinx()
 
-ax.scatter(Nlabels, np.sum(fluxes['slow']['fringe'], axis = 1), label = 'SLOW, Frozen fringe', color = fringecol, marker = slowmark)
-ax.plot(Nlabels, np.sum(fluxes['slow']['fringe'], axis = 1), linestyle = ':', color = fringecol)
+# ax.scatter(Nlabels, np.sum(fluxes['slow']['fringe'], axis = 1), label = 'SLOW, Frozen fringe', color = fringecol, marker = slowmark)
+# ax.plot(Nlabels, np.sum(fluxes['slow']['fringe'], axis = 1), linestyle = ':', color = fringecol)
 
-ax.scatter(Nlabels, np.sum(fluxes['fast']['fringe'], axis = 1), label = 'FAST, Frozen fringe', color = fringecol, marker = fastmark)
-ax.plot(Nlabels, np.sum(fluxes['fast']['fringe'], axis = 1), linestyle = ':', color = fringecol)
+# ax.scatter(Nlabels, np.sum(fluxes['fast']['fringe'], axis = 1), label = 'FAST, Frozen fringe', color = fringecol, marker = fastmark)
+# ax.plot(Nlabels, np.sum(fluxes['fast']['fringe'], axis = 1), linestyle = ':', color = fringecol)
 
-ax2.scatter(Nlabels, np.sum(fluxes['slow']['dispersed'], axis = 1), label = 'SLOW, Dispersed layer', color = dispcol, marker = slowmark)
-ax2.plot(Nlabels, np.sum(fluxes['slow']['dispersed'], axis = 1), linestyle = ':', color = dispcol)
+# ax2.scatter(Nlabels, np.sum(fluxes['slow']['dispersed'], axis = 1), label = 'SLOW, Dispersed layer', color = dispcol, marker = slowmark)
+# ax2.plot(Nlabels, np.sum(fluxes['slow']['dispersed'], axis = 1), linestyle = ':', color = dispcol)
 
-ax2.scatter(Nlabels, np.sum(fluxes['fast']['dispersed'], axis = 1), label = 'FAST, Dispersed layer', color = dispcol, marker = fastmark)
-ax2.plot(Nlabels, np.sum(fluxes['fast']['dispersed'], axis = 1), linestyle = ':', color = dispcol)
+# ax2.scatter(Nlabels, np.sum(fluxes['fast']['dispersed'], axis = 1), label = 'FAST, Dispersed layer', color = dispcol, marker = fastmark)
+# ax2.plot(Nlabels, np.sum(fluxes['fast']['dispersed'], axis = 1), linestyle = ':', color = dispcol)
 
-ax.set_xlabel('Effective pressure (% of overburden)')
-ax.set_ylabel('Sediment flux (m$^3$ a$^{-1}$)')
-ax.set_ylim([-500, 50000])
+# ax.set_xlabel('Effective pressure (% of overburden)')
+# ax.set_ylabel('Sediment flux (m$^3$ a$^{-1}$)')
+# ax.set_ylim([-500, 50000])
 
-ax2.set_ylabel('Sediment flux (m$^3$ a$^{-1}$)')
-ax2.set_ylim([-35, 3500])
+# ax2.set_ylabel('Sediment flux (m$^3$ a$^{-1}$)')
+# ax2.set_ylim([-35, 3500])
 
-ax.spines['left'].set_color(fringecol)
-ax.yaxis.label.set_color(fringecol)
-ax.tick_params(axis='y', colors=fringecol)
+# ax.spines['left'].set_color(fringecol)
+# ax.yaxis.label.set_color(fringecol)
+# ax.tick_params(axis='y', colors=fringecol)
 
-ax2.spines['right'].set_color(dispcol)
-ax2.yaxis.label.set_color(dispcol)
-ax2.tick_params(axis='y', colors=dispcol)
+# ax2.spines['right'].set_color(dispcol)
+# ax2.yaxis.label.set_color(dispcol)
+# ax2.tick_params(axis='y', colors=dispcol)
 
-plt.title('Sediment flux results', size = 18)
-ax.legend(loc = 'upper left')
-ax2.legend(loc = 'upper right')
-plt.show()
+# plt.title('Sediment flux results', size = 18)
+# ax.legend(loc = 'upper left')
+# ax2.legend(loc = 'upper right')
+# plt.show()
 
 # Layer thickness boxplots
-# fig, ax = plt.subplots(figsize = (12, 6))
+fig, ax = plt.subplots(figsize = (12, 6))
 
-# fplot = ax.boxplot(
-#     boxplots['slow']['fringe'], 
-#     positions = np.arange(len(Ns)), 
-#     widths = 0.4, 
-#     bootstrap = 1000,
-#     patch_artist = True,
-#     boxprops = dict(
-#         facecolor = 'lightblue'
-#     ),
-#     medianprops = dict(
-#         color = 'royalblue',
-#         linewidth = 2
-#     )
-# )
+fplot = ax.boxplot(
+    boxplots['slow']['fringe'], 
+    positions = np.arange(len(Ns)), 
+    widths = 0.4, 
+    bootstrap = 1000,
+    patch_artist = True,
+    boxprops = dict(
+        facecolor = 'lightblue'
+    ),
+    medianprops = dict(
+        color = 'royalblue',
+        linewidth = 2
+    )
+)
 
-# dplot = ax.boxplot(
-#     boxplots['slow']['dispersed'],
-#     positions = np.arange(len(Ns)) + 0.425,
-#     widths = 0.4,
-#     bootstrap = 1000,
-#     patch_artist = True,
-#     boxprops = dict(
-#         facecolor = 'navajowhite'
-#     ),
-#     medianprops = dict(
-#         color = 'orange',
-#         linewidth = 2
-#     )
-# )
+dplot = ax.boxplot(
+    boxplots['slow']['dispersed'],
+    positions = np.arange(len(Ns)) + 0.425,
+    widths = 0.4,
+    bootstrap = 1000,
+    patch_artist = True,
+    boxprops = dict(
+        facecolor = 'navajowhite'
+    ),
+    medianprops = dict(
+        color = 'orange',
+        linewidth = 2
+    )
+)
 
-# ax.yaxis.grid(True, which = 'both', linestyle = ':', linewidth = 0.5, alpha = 0.7, color = 'gray')
-# ax.yaxis.set_major_locator(ticker.MultipleLocator(base=1.0))
+ax.yaxis.grid(True, which = 'both', linestyle = ':', linewidth = 0.5, alpha = 0.7, color = 'gray')
+ax.yaxis.set_major_locator(ticker.MultipleLocator(base=1.0))
 
-# ax.set_xticks(np.arange(len(Ns)) + 0.2)
-# ax.set_xticklabels([str(100 - N) for N in Ns])
+ax.set_xticks(np.arange(len(Ns)) + 0.2)
+ax.set_xticklabels([str(100 - N) for N in Ns])
 
-# ax.set_xlabel('Effective pressure scenario (% of overburden)')
-# ax.set_ylabel('Layer thickness (m)')
-# plt.title('Modeled layer thicknesses at the terminus')
+ax.set_xlabel('Effective pressure scenario (% of overburden)')
+ax.set_ylabel('Layer thickness (m)')
+plt.title('Layer heights at the terminus ($\mathtt{SLOW}$ scenario)', size = 20)
 
-# legend_elements = [plt.Rectangle((0, 0), 1, 1, facecolor='lightblue', edgecolor='royalblue', label='Frozen fringe'),
-#                    plt.Rectangle((0, 0), 1, 1, facecolor='navajowhite', edgecolor='orange', label='Dispersed layer')]
-# ax.legend(handles=legend_elements, loc='upper right')
+legend_elements = [plt.Rectangle((0, 0), 1, 1, facecolor='lightblue', edgecolor='royalblue', label='Frozen fringe'),
+                   plt.Rectangle((0, 0), 1, 1, facecolor='navajowhite', edgecolor='orange', label='Dispersed layer')]
+ax.legend(handles=legend_elements, loc='upper right')
 
-# plt.savefig('./figures/slow_scenario_layers.png', dpi = 300)
+plt.savefig('./figures/slow_scenario_layers.png', dpi = 300)
 
-# # Layer thickness boxplots
-# fig, ax = plt.subplots(figsize = (12, 6))
+# Layer thickness boxplots
+fig, ax = plt.subplots(figsize = (12, 6))
 
-# fplot = ax.boxplot(
-#     boxplots['fast']['fringe'], 
-#     positions = np.arange(len(Ns)), 
-#     widths = 0.4, 
-#     bootstrap = 1000,
-#     patch_artist = True,
-#     boxprops = dict(
-#         facecolor = 'lightblue'
-#     ),
-#     medianprops = dict(
-#         color = 'royalblue',
-#         linewidth = 2
-#     )
-# )
+fplot = ax.boxplot(
+    boxplots['fast']['fringe'], 
+    positions = np.arange(len(Ns)), 
+    widths = 0.4, 
+    bootstrap = 1000,
+    patch_artist = True,
+    boxprops = dict(
+        facecolor = 'lightblue'
+    ),
+    medianprops = dict(
+        color = 'royalblue',
+        linewidth = 2
+    )
+)
 
-# dplot = ax.boxplot(
-#     boxplots['fast']['dispersed'],
-#     positions = np.arange(len(Ns)) + 0.425,
-#     widths = 0.4,
-#     bootstrap = 1000,
-#     patch_artist = True,
-#     boxprops = dict(
-#         facecolor = 'navajowhite'
-#     ),
-#     medianprops = dict(
-#         color = 'orange',
-#         linewidth = 2
-#     )
-# )
+dplot = ax.boxplot(
+    boxplots['fast']['dispersed'],
+    positions = np.arange(len(Ns)) + 0.425,
+    widths = 0.4,
+    bootstrap = 1000,
+    patch_artist = True,
+    boxprops = dict(
+        facecolor = 'navajowhite'
+    ),
+    medianprops = dict(
+        color = 'orange',
+        linewidth = 2
+    )
+)
 
-# ax.yaxis.grid(True, which = 'both', linestyle = ':', linewidth = 0.5, alpha = 0.7, color = 'gray')
-# ax.yaxis.set_major_locator(ticker.MultipleLocator(base=1.0))
+ax.yaxis.grid(True, which = 'both', linestyle = ':', linewidth = 0.5, alpha = 0.7, color = 'gray')
+ax.yaxis.set_major_locator(ticker.MultipleLocator(base=1.0))
 
-# ax.set_xticks(np.arange(len(Ns)) + 0.2)
-# ax.set_xticklabels([str(100 - N) for N in Ns])
+ax.set_xticks(np.arange(len(Ns)) + 0.2)
+ax.set_xticklabels([str(100 - N) for N in Ns])
 
-# ax.set_xlabel('Effective pressure scenario (% of overburden)')
-# ax.set_ylabel('Layer thickness (m)')
-# plt.title('Modeled layer thicknesses at the terminus')
+ax.set_xlabel('Effective pressure scenario (% of overburden)')
+ax.set_ylabel('Layer thickness (m)')
+plt.title('Layer heights at the terminus ($\mathtt{FAST}$ scenario)', size = 20)
 
-# legend_elements = [plt.Rectangle((0, 0), 1, 1, facecolor='lightblue', edgecolor='royalblue', label='Frozen fringe'),
-#                    plt.Rectangle((0, 0), 1, 1, facecolor='navajowhite', edgecolor='orange', label='Dispersed layer')]
-# ax.legend(handles=legend_elements, loc='upper right')
+legend_elements = [plt.Rectangle((0, 0), 1, 1, facecolor='lightblue', edgecolor='royalblue', label='Frozen fringe'),
+                   plt.Rectangle((0, 0), 1, 1, facecolor='navajowhite', edgecolor='orange', label='Dispersed layer')]
+ax.legend(handles=legend_elements, loc='upper right')
 
-# plt.savefig('./figures/fast_scenario_layers.png', dpi = 300)
+plt.savefig('./figures/fast_scenario_layers.png', dpi = 300)
