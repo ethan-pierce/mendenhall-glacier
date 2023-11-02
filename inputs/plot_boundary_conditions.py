@@ -93,20 +93,20 @@ mask = inputs.variables['thk'][:] > 0.5
 nbins = 40
 a = 0.25
 
-ax[0].hist(fast.variables['thk'][0][mask] * 917 * 9.81 * 0.95 * 1e-6, color = 'tab:blue', bins = nbins, alpha = a, label = 'N = 0.95 P$_i$')
-ax[0].hist(fast.variables['thk'][0][mask] * 917 * 9.81 * 0.9 * 1e-6, color = 'tab:orange', bins = nbins, alpha = a, label = 'N = 0.9 P$_i$')
-ax[0].hist(fast.variables['thk'][0][mask] * 917 * 9.81 * 0.8 * 1e-6, color = 'tab:purple', bins = nbins, alpha = a, label = 'N = 0.8 P$_i$')
-ax[0].hist(fast.variables['thk'][0][mask] * 917 * 9.81 * 0.6 * 1e-6, color = 'tab:red', bins = nbins, alpha = a, label = 'N = 0.6 P$_i$')
+ax[0].hist(fast.variables['thk'][0][mask] * 917 * 9.81 * 0.95 * 1e-6, color = 'tab:blue', bins = nbins, alpha = a, label = 'N = 5% P$_i$')
+ax[0].hist(fast.variables['thk'][0][mask] * 917 * 9.81 * 0.9 * 1e-6, color = 'tab:orange', bins = nbins, alpha = a, label = 'N = 10% P$_i$')
+ax[0].hist(fast.variables['thk'][0][mask] * 917 * 9.81 * 0.8 * 1e-6, color = 'tab:purple', bins = nbins, alpha = a, label = 'N = 20% P$_i$')
+ax[0].hist(fast.variables['thk'][0][mask] * 917 * 9.81 * 0.6 * 1e-6, color = 'tab:red', bins = nbins, alpha = a, label = 'N = 40% P$_i$')
 ax[0].axvline(68 * 1e-3, color = 'k', linestyle = ':', label = 'Ice entry pressure')
 ax[0].legend()
 ax[0].set_xlabel('Effective pressure (MPa)')
 ax[0].set_ylabel('Number of grid cells')
 ax[0].set_title('$\mathtt{FAST}$ scenario')
 
-ax[1].hist(slow.variables['thk'][0][mask] * 917 * 9.81 * 0.95 * 1e-6, color = 'tab:blue', bins = nbins, alpha = a, label = 'N = 0.95 P$_i$')
-ax[1].hist(slow.variables['thk'][0][mask] * 917 * 9.81 * 0.9 * 1e-6, color = 'tab:orange', bins = nbins, alpha = a, label = 'N = 0.9 P$_i$')
-ax[1].hist(slow.variables['thk'][0][mask] * 917 * 9.81 * 0.8 * 1e-6, color = 'tab:purple', bins = nbins, alpha = a, label = 'N = 0.8 P$_i$')
-ax[1].hist(slow.variables['thk'][0][mask] * 917 * 9.81 * 0.6 * 1e-6, color = 'tab:red', bins = nbins, alpha = a, label = 'N = 0.6 P$_i$')
+ax[1].hist(slow.variables['thk'][0][mask] * 917 * 9.81 * 0.95 * 1e-6, color = 'tab:blue', bins = nbins, alpha = a, label = 'N = 5% P$_i$')
+ax[1].hist(slow.variables['thk'][0][mask] * 917 * 9.81 * 0.9 * 1e-6, color = 'tab:orange', bins = nbins, alpha = a, label = 'N = 10% P$_i$')
+ax[1].hist(slow.variables['thk'][0][mask] * 917 * 9.81 * 0.8 * 1e-6, color = 'tab:purple', bins = nbins, alpha = a, label = 'N = 20% P$_i$')
+ax[1].hist(slow.variables['thk'][0][mask] * 917 * 9.81 * 0.6 * 1e-6, color = 'tab:red', bins = nbins, alpha = a, label = 'N = 40% P$_i$')
 ax[1].axvline(68 * 1e-3, color = 'k', linestyle = ':', label = 'Ice entry pressure')
 ax[1].legend()
 ax[1].set_xlabel('Effective pressure (MPa)')
