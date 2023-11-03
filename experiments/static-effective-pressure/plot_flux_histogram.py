@@ -46,6 +46,13 @@ for scenario in ['slow', 'fast']:
         fluxes[scenario]['fringe'].append(ffluxes)
         fluxes[scenario]['dispersed'].append(dfluxes)
 
+print(np.sum(fluxes['slow']['fringe'], axis = 1))
+print(np.sum(fluxes['slow']['dispersed'], axis = 1))
+print(np.sum(fluxes['fast']['fringe'], axis = 1))
+print(np.sum(fluxes['fast']['dispersed'], axis = 1))
+
+quit()
+
 cf = 'C4'
 cd = 'C5'
 

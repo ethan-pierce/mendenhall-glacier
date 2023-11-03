@@ -26,19 +26,19 @@ ymax = np.nanmax(model.grid.node_y[model.grid.at_node['ice_thickness'] > 0.5]) /
 def regrid(field):
     return np.flip(np.reshape(field, model.grid.shape), axis = 0)
 
-maxmap = {'disp': {'slow': 2.0, 'fast': 1.0}, 'fringe': {'slow': 5.0, 'fast': 3.5}}
+maxmap = {'disp': {'slow': 2.0, 'fast': 2.0}, 'fringe': {'slow': 5.0, 'fast': 5.0}}
 titles = {'disp'}
 labelmap = {'slow': '$\mathtt{SLOW}$ scenario', 'fast': '$\mathtt{FAST}$ scenario'}
 labelloc = {'slow': 0.2, 'fast': 0.675}
 plt.rcParams['font.size'] = 16
 
 for layer in ['disp', 'fringe']:
-    fig, axes = plt.subplots(2, 4, figsize = (28, 14))
+    fig, axes = plt.subplots(2, 2, figsize = (16, 16))
     a = 0
 
     for scenario in ['fast', 'slow']:
         input_dir = './experiments/static-effective-pressure/outputs/' + scenario + '/spatial/'
-        Ns = [60, 80, 90, 95]
+        Ns = [60, 90]
 
         plt.annotate(labelmap[scenario], (0.008, labelloc[scenario]), xycoords = 'figure fraction', rotation = 90, size = 26)
 
@@ -53,16 +53,18 @@ for layer in ['disp', 'fringe']:
             cbar = plt.colorbar(im, ax = ax, fraction = 0.0543, pad = 0.04)
             cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
 
-            ax.arrow(38, 190, 15, 0, width = 0.5, color = 'white')
+            # ax.arrow(38, 190, 15, 0, width = 0.5, color = 'white')
             ax.set_xlim([xmin, xmax])
             ax.set_ylim([ymax, ymin])
             ax.set_xlabel('Grid x')
             ax.set_ylabel('Grid y')
-            ax.set_title('N = ' + str(np.round(Ns[i] * 1e-2, 2)) + '% P$_i$', size = 24)
+
+            if a == 0:
+                ax.set_title('N = ' + str(100 - Ns[i]) + '% P$_i$', size = 26)
 
         a += 1
 
-    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.25, hspace=0.175)
+    plt.subplots_adjust(left=0.1, bottom=0.05, right=0.95, top=0.95, wspace=0.225, hspace=0.175)
     plt.savefig('./figures/' + layer + '_layer_results.png', dpi = 300)
 
 # for scenario in ['', 'fast']:
