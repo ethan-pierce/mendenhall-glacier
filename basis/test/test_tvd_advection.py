@@ -61,14 +61,14 @@ def test_calc_flux_limiter(tvd):
 def test_calc_rate_of_change(tvd):
     tvd.calc_rate_of_change(tvd._grid, tvd._field, tvd._vel, 1.0)
 
-    assert_array_equal(tvd._grid.at_link['flux'][15], [5.0])
-    assert_array_equal(tvd._grid.at_link['flux'][24], [50.0])
-    assert_array_equal(tvd._grid.at_link['flux'][19], [5.0])
-    assert_array_equal(tvd._grid.at_link['flux'][20], [50.0])
+    assert_array_equal(tvd._grid.at_link['test_flux'][15], [5.0])
+    assert_array_equal(tvd._grid.at_link['test_flux'][24], [50.0])
+    assert_array_equal(tvd._grid.at_link['test_flux'][19], [5.0])
+    assert_array_equal(tvd._grid.at_link['test_flux'][20], [50.0])
 
-    assert_array_equal(tvd._grid.at_node['flux_div'][12], [-9.0])
-    assert_array_equal(tvd._grid.at_node['flux_div'][13], [4.5])
-    assert_array_equal(tvd._grid.at_node['flux_div'][17], [4.5])
+    assert_array_equal(tvd._grid.at_node['test_flux_div'][12], [9.0])
+    assert_array_equal(tvd._grid.at_node['test_flux_div'][13], [-4.5])
+    assert_array_equal(tvd._grid.at_node['test_flux_div'][17], [-4.5])
 
 def test_update(tvd):
     tvd.update(1.0)

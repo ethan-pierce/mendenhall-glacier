@@ -474,7 +474,8 @@ class BasalIceStratigrapher:
             self.entrain_sediment(dt)
 
         if advect:
-            self.advect_sediment(dt)
+            self.advect_fringe(dt)
+            self.advect_dispersed_layer(dt)
 
         self.time_elapsed += dt
 

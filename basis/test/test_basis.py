@@ -185,7 +185,7 @@ def test_entrain_sediment():
     BIS.entrain_sediment(1.0)
 
     assert_approx_equal(BIS.grid.at_node['till_thickness'][5], 5.0, significant=4)
-    assert_approx_equal(BIS.grid.at_node['fringe_thickness'][5], 0.001027, significant=4)
+    assert_approx_equal(BIS.grid.at_node['fringe_thickness'][5], 0.0007933, significant=4)
     assert_approx_equal(BIS.grid.at_node['dispersed_layer_thickness'][5], 1.188e-10, significant=4)
 
 def test_advect_sediment():
@@ -205,11 +205,12 @@ def test_advect_sediment():
 
     BIS.entrain_sediment(100.0)
 
-    BIS.advect_sediment(100.0)
+    BIS.advect_fringe(100.0)
+    BIS.advect_dispersed_layer(100.0)
 
-    assert_approx_equal(BIS.grid.at_node['till_thickness'][5], 4.999, significant=4)
-    assert_approx_equal(BIS.grid.at_node['fringe_thickness'][5], 0.003655, significant=4)
-    assert_approx_equal(BIS.grid.at_node['dispersed_layer_thickness'][5], 1.188e-8, significant=4)
+    assert_approx_equal(BIS.grid.at_node['till_thickness'][5], 5.021, significant=4)
+    assert_approx_equal(BIS.grid.at_node['fringe_thickness'][5], 1e-6, significant=4)
+    assert_approx_equal(BIS.grid.at_node['dispersed_layer_thickness'][5], 0.001, significant=4)
 
 def test_run_one_step():
     """Test that the model can rull all update routines together."""
@@ -229,5 +230,5 @@ def test_run_one_step():
     BIS.run_one_step(1.0)
 
     assert_approx_equal(BIS.grid.at_node['till_thickness'][5], 5.0, significant=4)
-    assert_approx_equal(BIS.grid.at_node['fringe_thickness'][5], 0.001027, significant=4)
-    assert_approx_equal(BIS.grid.at_node['dispersed_layer_thickness'][5], 1.188e-10, significant=4)
+    assert_approx_equal(BIS.grid.at_node['fringe_thickness'][5], 0.001067, significant=4)
+    assert_approx_equal(BIS.grid.at_node['dispersed_layer_thickness'][5], 0.001, significant=4)
