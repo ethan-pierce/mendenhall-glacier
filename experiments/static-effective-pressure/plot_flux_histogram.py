@@ -51,7 +51,6 @@ print(np.sum(fluxes['slow']['dispersed'], axis = 1))
 print(np.sum(fluxes['fast']['fringe'], axis = 1))
 print(np.sum(fluxes['fast']['dispersed'], axis = 1))
 
-quit()
 
 cf = 'C4'
 cd = 'C5'
@@ -171,6 +170,8 @@ ax.yaxis.set_major_locator(ticker.MultipleLocator(base=1.0))
 ax.set_xticks(np.arange(len(Ns)) + 0.2)
 ax.set_xticklabels([str(100 - N) for N in Ns])
 
+ax.set_ylim([0, 5.5])
+
 ax.set_xlabel('Effective pressure scenario (% of overburden)')
 ax.set_ylabel('Layer thickness (m)')
 plt.title('Layer heights at the terminus ($\mathtt{SLOW}$ scenario)', size = 20)
@@ -219,6 +220,8 @@ ax.yaxis.set_major_locator(ticker.MultipleLocator(base=1.0))
 
 ax.set_xticks(np.arange(len(Ns)) + 0.2)
 ax.set_xticklabels([str(100 - N) for N in Ns])
+
+ax.set_ylim([0, 5.5])
 
 ax.set_xlabel('Effective pressure scenario (% of overburden)')
 ax.set_ylabel('Layer thickness (m)')
