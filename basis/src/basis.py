@@ -191,18 +191,35 @@ class BasalIceStratigrapher:
         Pi = rho * g * H
         self.grid.at_node['effective_pressure'][:] = Pi - Pw
 
+    def calc_threshold_velocity(self):
+        """Calculate the threshold velocity for slip (Zoet and Iverson, 2020)."""
+        N = self.grid.at_node['effective_pressure'][:]
+        Cp = self.params['clapeyron_slope']
+        r = self.params['large_clast_radius']
+        eta = self.params['ice_viscosity']
+        k0 = (2 * np.pi) / (4 * r)
+        Nf = 33
+        k = 0.1
+        a = 0.25
+        first_term = 1 / (eta * (a * r)**2 * k0**3)
+        second_term = (4 * Cp) / ((a * r)**2 * k0)
+        
+        return (
+            ((first_term + second_term) * Nf * N)
+            / (2 + Nf * k)
+        )
+
     def calc_shear_stress(self):
         """Calculate the basal shear stress beneath the glacier (Zoet and Iverson, 2020)."""
-        C = self.params['slip_law_coefficient']
         p = self.params['shear_exponent']
         theta = np.deg2rad(self.params['friction_angle'])
         N = self.grid.at_node['effective_pressure'][:]
         Us = self.grid.at_node['sliding_velocity_magnitude'][:]
+        Ut = self.calc_threshold_velocity()
 
         N_reg = np.where(
             self.grid.at_node['ice_thickness'] > 0.5, N, 1e-9
         )
-        Ut = C * N_reg
         tau_b = N * np.tan(theta) * np.float_power(Us / (Us + Ut), (1 / p))
         
         self.grid.at_node['basal_shear_stress'][:] = tau_b[:]
@@ -391,7 +408,7 @@ class BasalIceStratigrapher:
 
         fringe_dH = self.grid.at_node['fringe_growth_rate'] * dt
 
-        # fix some problems that arise with anomalous fringe growth rates
+        # quick fix for some problems that arise with anomalous fringe growth rates
         if clip > 0:
             cutoff = np.percentile(fringe_dH, clip)
             fringe_dH = np.where(
@@ -400,14 +417,21 @@ class BasalIceStratigrapher:
                 fringe_dH
             )
 
-        dispersed_dH = self.grid.at_node['dispersed_layer_growth_rate'] * dt
+        basal_melt = self.grid.at_node['basal_melt_rate']
+        dispersed_growth = self.grid.at_node['dispersed_layer_growth_rate']
+        dispersed_dH = np.where(
+            Hf <= 1e-6,
+            dispersed_growth - basal_melt,
+            dispersed_growth
+        ) * dt
 
         Ht[:] -= fringe_dH
         Hf[:] += fringe_dH
         Hd[:] += dispersed_dH
 
-        # physically, till thickness cannot be negative
+        # physically, till and dispersed layer thickness cannot be negative
         Ht[:] = np.where(Ht < 0, 0, Ht)
+        Hd[:] = np.where(Hd < 0, 0, Hd)
 
         # for numerical stability, fringe thickness cannot drop below 10^-6 m
         Hf[:] = np.where(Hf <= 1e-6, 1e-6, Hf)

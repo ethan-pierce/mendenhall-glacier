@@ -1,1 +1,2 @@
 experiments/static-effective-pressure/outputs/*/history/*.txt
+checkpoints/*
