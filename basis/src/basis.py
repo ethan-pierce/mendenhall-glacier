@@ -194,7 +194,7 @@ class BasalIceStratigrapher:
     def calc_threshold_velocity(self):
         """Calculate the threshold velocity for slip (Zoet and Iverson, 2020)."""
         N = self.grid.at_node['effective_pressure'][:]
-        Cp = self.params['clapeyron_slope']
+        Cp = self.params['ice_clapeyron_slope']
         r = self.params['large_clast_radius']
         eta = self.params['ice_viscosity']
         k0 = (2 * np.pi) / (4 * r)

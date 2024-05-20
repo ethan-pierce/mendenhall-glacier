@@ -65,7 +65,7 @@ names = {
     'friction_angle': 'Till friction angle',
     'sediment_thermal_conductivity': 'Thermal conductivity',
     'frozen_fringe_porosity': 'Fringe porosity',
-    'permeability': 'Fringe permeability'
+    'permeability': 'Till permeability'
 }
 units = {
     'effective_pressure': '(kPa)',
@@ -125,11 +125,19 @@ for i in range(len(vars_list)):
     )
     axis.scatter(default, df[df.variable == 'default'].fringe_sedflux * 1e-3, color = colors[0], s = 50)
 
-    axis2.plot(
-        df[df.variable == var].value * scalar,
-        df[df.variable == var].dispersed_sedflux * 1e-3,
-        color = colors[1]
-    )
+    if var in ['permeability', 'till_grain_radius']:
+        axis2.plot(
+            df[df.variable == var].value * scalar,
+            df[df.variable == var].dispersed_sedflux * 1e-3,
+            color = colors[1],
+            linestyle = '--'
+        )
+    else:
+        axis2.plot(
+            df[df.variable == var].value * scalar,
+            df[df.variable == var].dispersed_sedflux * 1e-3,
+            color = colors[1]
+        )
     axis2.scatter(default, df[df.variable == 'default'].dispersed_sedflux * 1e-3, color = colors[1], s = 50)
 
 plt.tight_layout()

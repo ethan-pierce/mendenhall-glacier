@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-plt.rcParams.update({'font.size': 24})
+plt.rcParams.update({'font.size': 32})
 plt.style.use('tableau-colorblind10')
 
 working_dir = './experiments/sensitivity/'
@@ -62,7 +62,7 @@ names = {
     'friction_angle': 'Till friction angle',
     'sediment_thermal_conductivity': 'Thermal conductivity',
     'frozen_fringe_porosity': 'Fringe porosity',
-    'permeability': 'Fringe permeability'
+    'permeability': 'Till permeability'
 }
 
 fbars = []
@@ -118,6 +118,9 @@ ax[1].set_ylabel('Sediment flux (kg m$^{-1}$ a$^{-1}$)', fontsize = 30)
 
 ax[0].legend(loc = 'upper right')
 ax[1].legend(loc = 'upper right')
+
+ax[0].set_title('Frozen fringe sensitivity')
+ax[1].set_title('Dispersed layer sensitivity')
 
 for axis in ax:
     axis.spines['top'].set_visible(False)

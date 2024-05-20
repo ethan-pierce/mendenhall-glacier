@@ -29,7 +29,7 @@ for scenario in ['slow', 'fast']:
     dx = model.grid.dx
     dy = model.grid.dy
     bounds = [50 * dx, 70 * dx, 0 * dy, 40 * dy]
-    model.identify_terminus(bounds, depth = 2)
+    model.identify_terminus(bounds, depth = 1)
 
     idx = np.ravel(np.argwhere(model.grid.at_node['adjacent_to_terminus'] | model.grid.at_node['is_terminus']))
 
