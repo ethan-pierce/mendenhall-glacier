@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13256637.svg)](https://doi.org/10.5281/zenodo.13256637)
+
 ## Modeling sediment fluxes from debris-rich basal ice layers
 ##### Pierce, Overeem, and Jouvet
 ###### *(recently submitted to JGR: Earth Surface)*
